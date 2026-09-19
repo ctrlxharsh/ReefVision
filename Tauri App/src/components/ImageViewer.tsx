@@ -84,10 +84,10 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
             <ThreeDotsLoader size="lg" />
             <div className="canvas-processing-stage-badge">
               {analysisStage === "classifying"
-                ? "Step 2 of 3 • BioCLIP & YOLO"
+                ? "Step 2 of 3 • Taxonomic & Bleaching Models"
                 : analysisStage === "rendering"
                 ? "Step 3 of 3 • Overlay Synthesis"
-                : "Step 1 of 3 • SAM ViT-B Engine"}
+                : "Step 1 of 3 • Segmentation Model"}
             </div>
             <div className="canvas-processing-title">
               {analysisStage === "classifying"
@@ -98,10 +98,10 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
             </div>
             <div className="canvas-processing-subtitle">
               {analysisStage === "classifying"
-                ? "Running BioCLIP taxonomy classification & YOLOv11 bleaching detection..."
+                ? "Running taxonomic identification & bleaching detection models..."
                 : analysisStage === "rendering"
                 ? "Compositing segmentation masks and spatial telemetry..."
-                : "Running SAM ViT-B prompt-free mask generation & boundary extraction..."}
+                : "Running segmentation model & boundary extraction..."}
             </div>
             <div className="canvas-progress-track">
               <div
