@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Loader2, Maximize2 } from "lucide-react";
+import { Maximize2 } from "lucide-react";
 import { ImageLightboxModal } from "./ImageLightboxModal";
-import { CoralSegment } from "../types";
+import { ThreeDotsLoader } from "./ThreeDotsLoader";
+import { CoralSegment, AnalysisStage } from "../types";
 
 interface ImageViewerProps {
   originalSrc: string;
@@ -9,6 +10,7 @@ interface ImageViewerProps {
   layoutMode: string;
   colorMode: string;
   isLoading?: boolean;
+  analysisStage?: AnalysisStage;
   segments?: CoralSegment[];
   imageResolution?: string;
 }
@@ -19,6 +21,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   layoutMode,
   colorMode,
   isLoading = false,
+  analysisStage = "idle",
   segments = [],
   imageResolution = "0x0",
 }) => {
@@ -78,13 +81,40 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
 
         {isLoading && (
           <div className="canvas-processing-overlay">
-            <Loader2 size={32} className="canvas-spinner" />
-            <div className="canvas-processing-title">Segmenting Reef Imagery...</div>
+            <ThreeDotsLoader size="lg" />
+            <div className="canvas-processing-stage-badge">
+              {analysisStage === "classifying"
+                ? "Step 2 of 3 • BioCLIP & YOLO"
+                : analysisStage === "rendering"
+                ? "Step 3 of 3 • Overlay Synthesis"
+                : "Step 1 of 3 • SAM ViT-B Engine"}
+            </div>
+            <div className="canvas-processing-title">
+              {analysisStage === "classifying"
+                ? "Naming Corals & Detecting Bleaching..."
+                : analysisStage === "rendering"
+                ? "Rendering Coral Map..."
+                : "Segmenting Corals..."}
+            </div>
             <div className="canvas-processing-subtitle">
-              Running SAM ViT-B mask generation & BioCLIP taxonomy classification...
+              {analysisStage === "classifying"
+                ? "Running BioCLIP taxonomy classification & YOLOv11 bleaching detection..."
+                : analysisStage === "rendering"
+                ? "Compositing segmentation masks and spatial telemetry..."
+                : "Running SAM ViT-B prompt-free mask generation & boundary extraction..."}
             </div>
             <div className="canvas-progress-track">
-              <div className="canvas-progress-bar" />
+              <div
+                className="canvas-progress-bar"
+                style={{
+                  width:
+                    analysisStage === "classifying"
+                      ? "66%"
+                      : analysisStage === "rendering"
+                      ? "92%"
+                      : "33%",
+                }}
+              />
             </div>
           </div>
         )}

@@ -12,6 +12,7 @@ import {
   CoralSegment,
   SummaryStats,
   HealthSummary,
+  AnalysisStage,
 } from "../types";
 import {
   runSegmentation,
@@ -54,6 +55,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
   // Analysis State
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [analysisStage, setAnalysisStage] = useState<AnalysisStage>("idle");
   const [overlaySrc, setOverlaySrc] = useState<string | null>(null);
   const [segments, setSegments] = useState<CoralSegment[]>([]);
   const [stats, setStats] = useState<SummaryStats>({
@@ -91,10 +93,20 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
     }
   };
 
-  // Reset overlay when switching images
+  // Reset overlay & telemetry when switching images
   useEffect(() => {
     setOverlaySrc(null);
     setSelectedMaskId(null);
+    setSegments([]);
+    setStats({
+      total_corals_detected: 0,
+      coral_coverage_pct: 0,
+      coral_covered_pixels: 0,
+      total_image_pixels: 0,
+      image_resolution: "0x0",
+      mean_iou_confidence: 0,
+      mean_stability_score: 0,
+    });
   }, [currentImage?.name]);
 
   // Run Segmentation & Enrichment when image or SAM hyperparameters change
@@ -104,6 +116,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
     const executeAnalysis = async () => {
       setIsLoading(true);
+      setAnalysisStage("segmenting");
       try {
         // Step 1: Run SAM ViT-B Segmentation
         await runSegmentation(
@@ -114,7 +127,10 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
           currentImage.dataUrl.startsWith("data:") ? currentImage.dataUrl : undefined
         );
 
+        if (isCancelled) return;
+
         // Step 2: Enrich filtered masks with BioCLIP & YOLO11
+        setAnalysisStage("classifying");
         const enrichResult = await runEnrichment(currentImage.name, minAreaPx);
 
         if (isCancelled) return;
@@ -125,6 +141,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
         setSceneEval(enrichResult.scene_eval);
 
         // Step 3: Render Overlay
+        setAnalysisStage("rendering");
         const overlayDataUrl = await renderOverlay({
           imageName: currentImage.name,
           minAreaPx,
@@ -142,7 +159,10 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
       } catch (err) {
         console.error("Analysis execution error:", err);
       } finally {
-        if (!isCancelled) setIsLoading(false);
+        if (!isCancelled) {
+          setIsLoading(false);
+          setAnalysisStage("idle");
+        }
       }
     };
 
@@ -278,6 +298,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
               layoutMode={layoutMode}
               colorMode={colorMode}
               isLoading={isLoading}
+              analysisStage={analysisStage}
               segments={segments}
               imageResolution={stats.image_resolution}
             />

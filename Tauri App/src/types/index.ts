@@ -92,3 +92,6 @@ export interface LoadedImage {
   width?: number;
   height?: number;
 }
+
+export type AnalysisStage = "segmenting" | "classifying" | "rendering" | "idle";
+

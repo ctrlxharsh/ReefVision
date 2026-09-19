@@ -1,5 +1,6 @@
 import React from "react";
 import { Target, Waves, Crosshair, ShieldCheck } from "lucide-react";
+import { ThreeDotsLoader } from "./ThreeDotsLoader";
 import { SummaryStats } from "../types";
 
 interface MetricCardsProps {
@@ -21,15 +22,19 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ stats, isLoading = fal
           </div>
         </div>
         <div className="metric-card-val">
-          {isLoading && stats.total_corals_detected === 0 ? (
-            <span className="metric-skeleton">•••</span>
+          {isLoading ? (
+            <ThreeDotsLoader size="sm" color="#0d7c85" />
           ) : (
             stats.total_corals_detected
           )}
         </div>
         <div className="metric-card-footer">
           <span className="metric-pill pill-corals">
-            {stats.total_corals_detected > 0 ? "Instances Identified" : "Analyzing seabed"}
+            {isLoading
+              ? "Analyzing seabed..."
+              : stats.total_corals_detected > 0
+              ? "Instances Identified"
+              : "Analyzing seabed"}
           </span>
         </div>
       </div>
@@ -43,8 +48,8 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ stats, isLoading = fal
           </div>
         </div>
         <div className="metric-card-val val-coverage">
-          {isLoading && stats.coral_coverage_pct === 0 ? (
-            <span className="metric-skeleton">•••%</span>
+          {isLoading ? (
+            <ThreeDotsLoader size="sm" color="#059669" />
           ) : (
             `${stats.coral_coverage_pct}%`
           )}
@@ -53,11 +58,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ stats, isLoading = fal
           <div className="metric-progress-wrap">
             <div
               className="metric-progress-bar"
-              style={{ width: `${Math.min(coveragePercent, 100)}%` }}
+              style={{ width: `${isLoading ? 0 : Math.min(coveragePercent, 100)}%` }}
             />
           </div>
           <span className="metric-subtext">
-            {stats.coral_covered_pixels > 0
+            {isLoading
+              ? "Calculating area..."
+              : stats.coral_covered_pixels > 0
               ? `${stats.coral_covered_pixels.toLocaleString("en-US")} px total`
               : "0 px"}
           </span>
@@ -73,15 +80,23 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ stats, isLoading = fal
           </div>
         </div>
         <div className="metric-card-val val-iou">
-          {isLoading && stats.mean_iou_confidence === 0 ? (
-            <span className="metric-skeleton">•••</span>
+          {isLoading ? (
+            <ThreeDotsLoader size="sm" color="#0284c7" />
           ) : (
             stats.mean_iou_confidence.toFixed(3)
           )}
         </div>
         <div className="metric-card-footer">
-          <span className={`metric-pill ${stats.mean_iou_confidence >= 0.7 ? "pill-quality-high" : "pill-quality-mid"}`}>
-            {stats.mean_iou_confidence >= 0.7 ? "High Fidelity" : "Standard Precision"}
+          <span
+            className={`metric-pill ${
+              stats.mean_iou_confidence >= 0.7 ? "pill-quality-high" : "pill-quality-mid"
+            }`}
+          >
+            {isLoading
+              ? "Evaluating fidelity..."
+              : stats.mean_iou_confidence >= 0.7
+              ? "High Fidelity"
+              : "Standard Precision"}
           </span>
         </div>
       </div>
@@ -95,15 +110,23 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ stats, isLoading = fal
           </div>
         </div>
         <div className="metric-card-val val-stability">
-          {isLoading && stats.mean_stability_score === 0 ? (
-            <span className="metric-skeleton">•••</span>
+          {isLoading ? (
+            <ThreeDotsLoader size="sm" color="#4f46e5" />
           ) : (
             stats.mean_stability_score.toFixed(3)
           )}
         </div>
         <div className="metric-card-footer">
-          <span className={`metric-pill ${stats.mean_stability_score >= 0.8 ? "pill-quality-high" : "pill-quality-mid"}`}>
-            {stats.mean_stability_score >= 0.8 ? "Reliable Mask Bounds" : "Boundary Evaluated"}
+          <span
+            className={`metric-pill ${
+              stats.mean_stability_score >= 0.8 ? "pill-quality-high" : "pill-quality-mid"
+            }`}
+          >
+            {isLoading
+              ? "Validating bounds..."
+              : stats.mean_stability_score >= 0.8
+              ? "Reliable Mask Bounds"
+              : "Boundary Evaluated"}
           </span>
         </div>
       </div>
