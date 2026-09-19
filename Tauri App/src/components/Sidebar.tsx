@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Sliders, Palette, Cpu, ChevronRight, ChevronDown, Minus, Plus, PanelLeftClose } from "lucide-react";
+import { Sliders, Palette, Cpu, ChevronRight, ChevronDown, Minus, Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { UISelect, UISelectOption } from "./UISelect";
 import { InfoTooltip } from "./InfoTooltip";
 import { DeviceInfo, CoralSegment } from "../types";
@@ -163,9 +163,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   const deviceSelectOptions: UISelectOption[] = [
-    { value: "auto", label: "Auto (CUDA if available)" },
-    { value: "cuda", label: "NVIDIA CUDA GPU" },
-    { value: "cpu", label: "Multi-Threaded CPU Engine" },
+    { value: "auto", label: "Auto (GPU -> Multi-Thread CPU -> CPU)" },
+    {
+      value: "gpu",
+      label: `GPU Acceleration ${deviceInfo?.gpu_available ? `(${deviceInfo.gpu_name})` : "[Unavailable]"}`,
+    },
+    {
+      value: "multithread_cpu",
+      label: `Multi-Threaded CPU Engine (${deviceInfo?.cpu_count || 4} Threads)`,
+    },
+    {
+      value: "cpu",
+      label: "Single-Threaded CPU Engine (1 Thread)",
+    },
   ];
 
   const handleMinAreaStep = (delta: number) => {
@@ -173,11 +183,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onMinAreaPxChange(nextVal);
   };
 
-  const dynamicWidth = isCollapsed ? 0 : sidebarWidth;
+  if (isCollapsed) {
+    return (
+      <button
+        type="button"
+        className="sidebar-floating-expand-btn"
+        onClick={onToggleCollapse}
+        title="Open Analysis Controls"
+        aria-label="Open Analysis Controls"
+      >
+        <PanelLeftOpen size={16} />
+      </button>
+    );
+  }
+
+  const dynamicWidth = sidebarWidth;
 
   return (
     <aside
-      className={`app-sidebar ${isCollapsed ? "collapsed" : ""}`}
+      className="app-sidebar"
       style={{
         width: `${dynamicWidth}px`,
         minWidth: `${dynamicWidth}px`,

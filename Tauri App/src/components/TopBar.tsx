@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { DeviceInfo } from "../types";
 
@@ -8,20 +8,18 @@ interface TopBarProps {
   currentIndex?: number;
   totalImages?: number;
   onBack: () => void;
-  isSidebarCollapsed: boolean;
-  onToggleSidebar: () => void;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
   deviceInfo?: DeviceInfo | null;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
   onBack,
-  isSidebarCollapsed,
-  onToggleSidebar,
   deviceInfo,
 }) => {
   return (
     <header className="top-navbar">
-      {/* Left side: Back to Selection & Sidebar Toggle (Icon-only) */}
+      {/* Left side: Back to Selection */}
       <div className="top-navbar-left">
         <button
           className="top-navbar-btn btn-back-selection"
@@ -30,17 +28,6 @@ export const TopBar: React.FC<TopBarProps> = ({
         >
           <ArrowLeft size={16} />
           <span>Back to Selection</span>
-        </button>
-
-        <div className="top-navbar-divider" />
-
-        <button
-          className="top-navbar-icon-btn"
-          onClick={onToggleSidebar}
-          title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-        >
-          {isSidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
         </button>
       </div>
 

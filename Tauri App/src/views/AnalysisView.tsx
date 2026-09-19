@@ -203,11 +203,9 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
   return (
     <div className="analysis-layout">
-      {/* Top Bar: Back, Collapse Toggle, Andromeida Branding, Hardware Device */}
+      {/* Top Bar: Back, Andromeida Branding, Hardware Device */}
       <TopBar
         onBack={onBackToUpload}
-        isSidebarCollapsed={isSidebarCollapsed}
-        onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         deviceInfo={deviceInfo}
       />
 
