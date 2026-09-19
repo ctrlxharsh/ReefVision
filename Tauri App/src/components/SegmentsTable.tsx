@@ -7,7 +7,7 @@ import {
   createColumnHelper,
   SortingState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { CoralSegment, SummaryStats } from "../types";
 
 interface SegmentsTableProps {
@@ -36,11 +36,8 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
         cell: (info) => {
           const s = info.row.original;
           return (
-            <div className="cell-id-badge">
-              <span
-                className="cell-color-dot"
-                style={{ backgroundColor: s.color_hex }}
-              />
+            <div className="table-id-cell">
+              <span className="table-color-dot" style={{ backgroundColor: s.color_hex }} />
               <span>{s.id_str}</span>
             </div>
           );
@@ -48,28 +45,25 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
       }),
       columnHelper.accessor("genus", {
         header: "Taxon Genus",
-        cell: (info) => <span className="cell-genus">{info.getValue()}</span>,
+        cell: (info) => <span style={{ fontWeight: 600 }}>{info.getValue()}</span>,
       }),
       columnHelper.accessor("growth_form", {
         header: "Growth Form",
-        cell: (info) => <span className="cell-muted">{info.getValue()}</span>,
+        cell: (info) => <span style={{ color: "#64748b" }}>{info.getValue()}</span>,
       }),
       columnHelper.accessor("taxon_conf", {
         header: "Taxon Conf",
         cell: (info) => {
           const val = info.getValue();
           return (
-            <div className="progress-cell">
-              <span className="progress-num">{val.toFixed(1)}%</span>
-              <div className="table-progress-bg">
+            <div className="table-prog-cell">
+              <div className="table-prog-track">
                 <div
-                  className="table-progress-bar"
-                  style={{
-                    width: `${Math.min(val, 100)}%`,
-                    backgroundColor: "var(--color-teal)",
-                  }}
+                  className="table-prog-fill"
+                  style={{ width: `${Math.min(val, 100)}%`, backgroundColor: "#0d7c85" }}
                 />
               </div>
+              <span className="table-prog-val">{val.toFixed(1)}%</span>
             </div>
           );
         },
@@ -79,7 +73,7 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
         cell: (info) => {
           const cond = info.getValue();
           return (
-            <span className={`badge ${cond === "Bleached" ? "badge-bleached" : "badge-healthy"}`}>
+            <span className={cond === "Bleached" ? "badge-bleached" : "badge-healthy"}>
               {cond}
             </span>
           );
@@ -91,32 +85,32 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
           const val = info.getValue();
           const cond = info.row.original.condition;
           return (
-            <div className="progress-cell">
-              <span className="progress-num">{val.toFixed(1)}%</span>
-              <div className="table-progress-bg">
+            <div className="table-prog-cell">
+              <div className="table-prog-track">
                 <div
-                  className="table-progress-bar"
+                  className="table-prog-fill"
                   style={{
                     width: `${Math.min(val, 100)}%`,
-                    backgroundColor: cond === "Bleached" ? "var(--color-danger)" : "var(--color-success)",
+                    backgroundColor: cond === "Bleached" ? "#dc2626" : "#059669",
                   }}
                 />
               </div>
+              <span className="table-prog-val">{val.toFixed(1)}%</span>
             </div>
           );
         },
       }),
       columnHelper.accessor("area_pct", {
         header: "Area (%)",
-        cell: (info) => <span className="cell-mono">{info.getValue()}%</span>,
+        cell: (info) => <span className="mono-val">{info.getValue()}%</span>,
       }),
       columnHelper.accessor("area_px", {
         header: "Area (px)",
-        cell: (info) => <span className="cell-mono">{info.getValue().toLocaleString("en-US")}</span>,
+        cell: (info) => <span className="mono-val">{info.getValue().toLocaleString("en-US")}</span>,
       }),
       columnHelper.accessor("predicted_iou", {
         header: "IoU Confidence",
-        cell: (info) => <span className="cell-mono font-bold">{info.getValue().toFixed(3)}</span>,
+        cell: (info) => <span className="mono-val font-semibold">{info.getValue().toFixed(3)}</span>,
       }),
     ],
     []
@@ -134,66 +128,73 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
   });
 
   return (
-    <div className="table-section">
-      <div className="section-header-row">
-        <h3 className="section-title">
-          <span>Detected Coral Breakdown</span>
-          <span className="section-counter-badge">{segments.length} Instances</span>
-        </h3>
-        <div className="section-meta-text">
-          {isLoading ? (
-            <span>Computing image metrics...</span>
-          ) : (
-            <span>
-              Res: <code>{stats.image_resolution}</code> • Coral Area: <code>{stats.coral_covered_pixels.toLocaleString("en-US")} px</code> ({stats.coral_coverage_pct}%)
-            </span>
-          )}
-        </div>
+    <div className="table-section-container">
+      <div className="section-header">
+        <span>📊</span>
+        <span>Detected Coral Segments Breakdown</span>
+      </div>
+      <div className="sub-caption-text">
+        Resolution: <code>{stats.image_resolution || "2048x1024"}</code> | Coral Pixels:{" "}
+        <code>{stats.coral_covered_pixels.toLocaleString("en-US")}</code> ({stats.coral_coverage_pct}%) | Total Instances:{" "}
+        <code>{stats.total_corals_detected}</code>
       </div>
 
-      {isLoading ? (
-        <div className="table-loading-box">
-          <Loader2 size={28} className="loading-spinner-ring" />
-          <div className="loading-title">Extracting Coral Segments & Classifying Taxonomy...</div>
-          <div className="loading-subtitle">
-            Segmented colonies will populate below with genus predictions, condition health, and confidence scores.
-          </div>
-          <div className="loading-bar-track">
-            <div className="loading-bar-pulse" />
-          </div>
+      {isLoading && segments.length === 0 ? (
+        <div className="table-frame">
+          <table className="custom-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Taxon Genus</th>
+                <th>Growth Form</th>
+                <th>Taxon Conf</th>
+                <th>Condition</th>
+                <th>Condition Conf</th>
+                <th>Area (%)</th>
+                <th>Area (px)</th>
+                <th>IoU Confidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <tr key={i} className="skeleton-tr">
+                  <td colSpan={9}>
+                    <div className="table-skeleton-bar" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : segments.length === 0 ? (
-        <div className="table-empty-box">
+        <div className="table-empty-notice">
           No coral segments detected with current threshold settings. Try lowering the IoU or Stability threshold in the sidebar.
         </div>
       ) : (
-        <div className="table-wrapper">
-          <table className="segments-table">
+        <div className="table-frame">
+          <table className="custom-table">
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     const isSortable = header.column.getCanSort();
-                    const sortDirection = header.column.getIsSorted();
+                    const sortDir = header.column.getIsSorted();
                     return (
                       <th
                         key={header.id}
-                        style={{
-                          cursor: isSortable ? "pointer" : "default",
-                        }}
                         onClick={header.column.getToggleSortingHandler()}
-                        title={isSortable ? "Click to sort column" : undefined}
+                        style={{ cursor: isSortable ? "pointer" : "default" }}
                       >
-                        <div className="th-content">
-                          <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
+                        <div className="th-flex">
+                          {flexRender(header.column.columnDef.header, header.getContext())}
                           {isSortable && (
-                            <span className="th-sort-icon">
-                              {sortDirection === "asc" ? (
-                                <ArrowUp size={12} color="var(--color-teal)" />
-                              ) : sortDirection === "desc" ? (
-                                <ArrowDown size={12} color="var(--color-teal)" />
+                            <span className="th-sort-arrow">
+                              {sortDir === "asc" ? (
+                                <ArrowUp size={13} color="#0d7c85" />
+                              ) : sortDir === "desc" ? (
+                                <ArrowDown size={13} color="#0d7c85" />
                               ) : (
-                                <ArrowUpDown size={11} opacity={0.35} />
+                                <ArrowUpDown size={11} opacity={0.3} />
                               )}
                             </span>
                           )}
@@ -211,9 +212,8 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
                 return (
                   <tr
                     key={row.id}
-                    className={`table-row ${isSelected ? "selected-row" : ""}`}
+                    className={`table-row-item ${isSelected ? "selected" : ""}`}
                     onClick={() => onSelectSegment && onSelectSegment(isSelected ? null : s.id)}
-                    title="Click row to focus/highlight coral on canvas"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td key={cell.id}>

@@ -29,54 +29,58 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
     }
   };
 
-  const renderLoadingState = (title = "Segmenting Reef Imagery...") => (
-    <div className="loading-container">
-      <Loader2 size={32} className="loading-spinner-ring" />
-      <div className="loading-title">{title}</div>
-      <div className="loading-subtitle">
-        Running SAM ViT-B zero-shot mask generation & BioCLIP taxonomy classification...
+  const renderOverlayContent = (showDarkBg = false) => {
+    const displayImg = overlaySrc || originalSrc;
+
+    return (
+      <div className={`canvas-img-container ${showDarkBg ? "canvas-dark-bg" : ""}`}>
+        {displayImg ? (
+          <img
+            src={displayImg}
+            alt="Segmentation Overlay"
+            className={`canvas-img ${isLoading ? "canvas-img-dimmed" : ""}`}
+          />
+        ) : (
+          <div className="canvas-empty-state">No Imagery Available</div>
+        )}
+
+        {isLoading && (
+          <div className="canvas-processing-overlay">
+            <Loader2 size={32} className="canvas-spinner" />
+            <div className="canvas-processing-title">Segmenting Reef Imagery...</div>
+            <div className="canvas-processing-subtitle">
+              Running SAM ViT-B mask generation & BioCLIP taxonomy classification...
+            </div>
+            <div className="canvas-progress-track">
+              <div className="canvas-progress-bar" />
+            </div>
+          </div>
+        )}
       </div>
-      <div className="loading-bar-track">
-        <div className="loading-bar-pulse" />
-      </div>
-    </div>
-  );
+    );
+  };
 
   if (layoutMode === "Overlay Only") {
     return (
-      <div className="canvas-single">
-        <div className="canvas-header">
-          <span className="canvas-title">Segmentation Overlay</span>
-          <span className="canvas-badge">{getBadgeLabel()}</span>
+      <div className="canvas-single-wrapper">
+        <div className="image-column-header">
+          <span>Segmentation Overlay</span>
+          <span className="image-column-header-badge">FULL CANVAS</span>
         </div>
-        <div className="canvas-img-wrapper">
-          {isLoading && overlaySrc && (
-            <div className="canvas-recomputing-badge">
-              <Loader2 size={12} className="spin" />
-              <span>Updating...</span>
-            </div>
-          )}
-          {overlaySrc ? (
-            <img src={overlaySrc} alt="Segmentation Overlay" className="canvas-img" />
-          ) : isLoading ? (
-            renderLoadingState()
-          ) : (
-            <div className="canvas-empty">No Overlay Available</div>
-          )}
-        </div>
+        {renderOverlayContent()}
       </div>
     );
   }
 
   if (layoutMode === "Original Only") {
     return (
-      <div className="canvas-single">
-        <div className="canvas-header">
-          <span className="canvas-title">Original Image</span>
-          <span className="canvas-badge">SOURCE</span>
+      <div className="canvas-single-wrapper">
+        <div className="image-column-header">
+          <span>Original Image</span>
+          <span className="image-column-header-badge">SOURCE</span>
         </div>
-        <div className="canvas-img-wrapper">
-          <img src={originalSrc} alt="Original Coral Image" className="canvas-img" />
+        <div className="canvas-img-container">
+          <img src={originalSrc} alt="Original Reef" className="canvas-img" />
         </div>
       </div>
     );
@@ -84,63 +88,35 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
 
   if (layoutMode === "Masks on Black") {
     return (
-      <div className="canvas-single">
-        <div className="canvas-header">
-          <span className="canvas-title">Isolated Coral Masks</span>
-          <span className="canvas-badge">BLACK MASK</span>
+      <div className="canvas-single-wrapper">
+        <div className="image-column-header">
+          <span>Isolated Coral Masks</span>
+          <span className="image-column-header-badge">MASKS</span>
         </div>
-        <div className="canvas-img-wrapper canvas-img-dark">
-          {isLoading && overlaySrc && (
-            <div className="canvas-recomputing-badge">
-              <Loader2 size={12} className="spin" />
-              <span>Updating...</span>
-            </div>
-          )}
-          {overlaySrc ? (
-            <img src={overlaySrc} alt="Masks on Black" className="canvas-img" />
-          ) : isLoading ? (
-            renderLoadingState("Generating Coral Masks...")
-          ) : (
-            <div className="canvas-empty">No Masks Available</div>
-          )}
-        </div>
+        {renderOverlayContent(true)}
       </div>
     );
   }
 
-  // Default: Side-by-Side
+  // Default: Side-by-Side (Matching Streamlit 2-Column Exact Layout)
   return (
-    <div className="canvas-grid">
-      <div className="canvas-col">
-        <div className="canvas-header">
-          <span className="canvas-title">ORIGINAL IMAGE</span>
-          <span className="canvas-badge">SOURCE</span>
+    <div className="canvas-side-by-side">
+      <div className="canvas-column">
+        <div className="image-column-header">
+          <span>Original Image</span>
+          <span className="image-column-header-badge">SOURCE</span>
         </div>
-        <div className="canvas-img-wrapper">
-          <img src={originalSrc} alt="Source" className="canvas-img" />
+        <div className="canvas-img-container">
+          <img src={originalSrc} alt="Original Image" className="canvas-img" />
         </div>
       </div>
 
-      <div className="canvas-col">
-        <div className="canvas-header">
-          <span className="canvas-title">SEGMENTATION OVERLAY</span>
-          <span className="canvas-badge canvas-badge-accent">{getBadgeLabel()}</span>
+      <div className="canvas-column">
+        <div className="image-column-header">
+          <span>Segmentation Overlay</span>
+          <span className="image-column-header-badge">{getBadgeLabel()}</span>
         </div>
-        <div className="canvas-img-wrapper">
-          {isLoading && overlaySrc && (
-            <div className="canvas-recomputing-badge">
-              <Loader2 size={12} className="spin" />
-              <span>Updating...</span>
-            </div>
-          )}
-          {overlaySrc ? (
-            <img src={overlaySrc} alt="Segmentation Overlay" className="canvas-img" />
-          ) : isLoading ? (
-            renderLoadingState()
-          ) : (
-            <div className="canvas-empty">Preparing Vision Engine...</div>
-          )}
-        </div>
+        {renderOverlayContent()}
       </div>
     </div>
   );

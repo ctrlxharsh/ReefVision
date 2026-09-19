@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Sidebar } from "../components/Sidebar";
 import { TopBar } from "../components/TopBar";
+import { PaginationBar } from "../components/PaginationBar";
 import { ImageViewer } from "../components/ImageViewer";
 import { MetricCards } from "../components/MetricCards";
 import { SegmentsTable } from "../components/SegmentsTable";
@@ -201,13 +202,11 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
   return (
     <div className="analysis-layout">
-      {/* Top Navigation Bar: Integrated Pagination, Image Name, and Controls */}
+      {/* Top Bar: Back, Collapse, Filename Badge, Hardware Device */}
       <TopBar
         imageName={currentImage.name}
         currentIndex={currentIndex}
         totalImages={images.length}
-        onPrev={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
-        onNext={() => setCurrentIndex((prev) => Math.min(prev + 1, images.length - 1))}
         onBack={onBackToUpload}
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -250,7 +249,16 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
         {/* Main Studio Canvas & Results */}
         <main className="main-view">
-          <div className="studio-container">
+          <div className="block-container">
+            {/* Dedicated Pagination & Image Switcher */}
+            <PaginationBar
+              currentIndex={currentIndex}
+              totalImages={images.length}
+              onPrev={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
+              onNext={() => setCurrentIndex((prev) => Math.min(prev + 1, images.length - 1))}
+              onSelectPage={(idx) => setCurrentIndex(idx)}
+            />
+
             {/* Canvas Image Viewer */}
             <ImageViewer
               originalSrc={currentImage.dataUrl}
@@ -260,35 +268,35 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
               isLoading={isLoading}
             />
 
-          {/* 4 KPI Summary Cards */}
-          <MetricCards stats={stats} isLoading={isLoading} />
+            {/* 4 KPI Summary Cards with Rich Top Color Accents */}
+            <MetricCards stats={stats} isLoading={isLoading} />
 
-          {/* Segments Breakdown Table */}
-          <SegmentsTable
-            segments={segments}
-            stats={stats}
-            selectedSegmentId={selectedMaskId}
-            onSelectSegment={(id) => setSelectedMaskId(id)}
-            isLoading={isLoading}
-          />
+            {/* Detected Coral Segments Breakdown Table */}
+            <SegmentsTable
+              segments={segments}
+              stats={stats}
+              selectedSegmentId={selectedMaskId}
+              onSelectSegment={(id) => setSelectedMaskId(id)}
+              isLoading={isLoading}
+            />
 
-          {/* Export & Data Inspector */}
-          <ExportPanel
-            imageName={currentImage.name}
-            minAreaPx={minAreaPx}
-            overlayDataUrl={overlaySrc}
-            rawJsonData={{
-              summary: stats,
-              health_summary: healthSummary,
-              scene_taxonomy: sceneEval?.taxonomy,
-              scene_bleaching: sceneEval?.bleaching,
-              segments: segments,
-            }}
-            hasSegments={segments.length > 0}
-          />
-        </div>
-      </main>
+            {/* Export & Data Inspector */}
+            <ExportPanel
+              imageName={currentImage.name}
+              minAreaPx={minAreaPx}
+              overlayDataUrl={overlaySrc}
+              rawJsonData={{
+                summary: stats,
+                health_summary: healthSummary,
+                scene_taxonomy: sceneEval?.taxonomy,
+                scene_bleaching: sceneEval?.bleaching,
+                segments: segments,
+              }}
+              hasSegments={segments.length > 0}
+            />
+          </div>
+        </main>
+      </div>
     </div>
-  </div>
-);
+  );
 };
