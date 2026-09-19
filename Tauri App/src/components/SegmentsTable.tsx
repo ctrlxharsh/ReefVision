@@ -7,7 +7,7 @@ import {
   createColumnHelper,
   SortingState,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Layers } from "lucide-react";
 import { CoralSegment, SummaryStats } from "../types";
 
 interface SegmentsTableProps {
@@ -130,13 +130,23 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
   return (
     <div className="table-section-container">
       <div className="section-header">
-        <span>📊</span>
+        <Layers size={18} className="section-header-icon" />
         <span>Detected Coral Segments Breakdown</span>
       </div>
-      <div className="sub-caption-text">
-        Resolution: <code>{stats.image_resolution || "2048x1024"}</code> | Coral Pixels:{" "}
-        <code>{stats.coral_covered_pixels.toLocaleString("en-US")}</code> ({stats.coral_coverage_pct}%) | Total Instances:{" "}
-        <code>{stats.total_corals_detected}</code>
+      <div className="table-meta-bar">
+        <div className="meta-pill">
+          <span className="meta-pill-label">Resolution</span>
+          <span className="meta-pill-val">{stats.image_resolution ? stats.image_resolution.replace("x", " × ") : "2048 × 1024"}</span>
+        </div>
+        <div className="meta-pill">
+          <span className="meta-pill-label">Coral Coverage</span>
+          <span className="meta-pill-val highlight">{stats.coral_coverage_pct}%</span>
+          <span className="meta-pill-secondary">({stats.coral_covered_pixels.toLocaleString("en-US")} px)</span>
+        </div>
+        <div className="meta-pill">
+          <span className="meta-pill-label">Total Instances</span>
+          <span className="meta-pill-val badge-accent">{stats.total_corals_detected}</span>
+        </div>
       </div>
 
       {isLoading && segments.length === 0 ? (

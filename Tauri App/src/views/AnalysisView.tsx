@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { ChevronRight, FolderOpen, FileImage } from "lucide-react";
 import { Sidebar } from "../components/Sidebar";
 import { TopBar } from "../components/TopBar";
 import { PaginationBar } from "../components/PaginationBar";
@@ -202,11 +203,8 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
   return (
     <div className="analysis-layout">
-      {/* Top Bar: Back, Collapse, Filename Badge, Hardware Device */}
+      {/* Top Bar: Back, Collapse Toggle, Andromeida Branding, Hardware Device */}
       <TopBar
-        imageName={currentImage.name}
-        currentIndex={currentIndex}
-        totalImages={images.length}
         onBack={onBackToUpload}
         isSidebarCollapsed={isSidebarCollapsed}
         onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -258,6 +256,29 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
               onNext={() => setCurrentIndex((prev) => Math.min(prev + 1, images.length - 1))}
               onSelectPage={(idx) => setCurrentIndex(idx)}
             />
+
+            {/* Left-Aligned Image Breadcrumb */}
+            <div className="image-breadcrumb-container">
+              <nav className="image-breadcrumb" aria-label="Breadcrumb">
+                <button
+                  type="button"
+                  className="breadcrumb-crumb-btn"
+                  onClick={onBackToUpload}
+                  title="Return to image library"
+                >
+                  <FolderOpen size={13} className="breadcrumb-icon" />
+                  <span>Library</span>
+                </button>
+                <ChevronRight size={13} className="breadcrumb-separator" />
+                <span className="breadcrumb-crumb-current" title={currentImage.name}>
+                  <FileImage size={13} className="breadcrumb-icon" />
+                  <span className="breadcrumb-filename">{currentImage.name}</span>
+                </span>
+                <span className="breadcrumb-badge">
+                  Image {currentIndex + 1} of {images.length}
+                </span>
+              </nav>
+            </div>
 
             {/* Canvas Image Viewer */}
             <ImageViewer

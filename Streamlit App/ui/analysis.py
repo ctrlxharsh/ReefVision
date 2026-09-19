@@ -392,10 +392,29 @@ def render_analysis_page(model, bioclip_bundle=None, bleaching_model=None):
 
     # ------------------ MAIN FOCUS: DETECTED CORAL SEGMENTS BREAKDOWN ------------------
     st.markdown("### :material/table_chart: Detected Coral Segments Breakdown")
-    st.caption(
-        f"Resolution: `{summary_stats['image_resolution']}` | "
-        f"Coral Pixels: `{summary_stats['coral_covered_pixels']:,}` ({summary_stats['coral_coverage_pct']}%) | "
-        f"Total Instances: `{summary_stats['total_corals_detected']}`"
+    res_display = str(summary_stats.get('image_resolution', '2048x1024')).replace('x', ' × ')
+    cov_pct = summary_stats.get('coral_coverage_pct', 0.0)
+    cov_px = f"{summary_stats.get('coral_covered_pixels', 0):,}"
+    total_inst = summary_stats.get('total_corals_detected', 0)
+    st.markdown(
+        f"""
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; font-size:12.5px;">
+            <div style="display:inline-flex; align-items:center; gap:6px; padding:3px 9px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;">
+                <span style="color:#64748b; font-weight:500;">Resolution</span>
+                <span style="font-family:monospace; font-weight:600; color:#1e293b;">{res_display}</span>
+            </div>
+            <div style="display:inline-flex; align-items:center; gap:6px; padding:3px 9px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;">
+                <span style="color:#64748b; font-weight:500;">Coral Coverage</span>
+                <span style="font-family:monospace; font-weight:600; color:#0d7c85;">{cov_pct}%</span>
+                <span style="color:#94a3b8; font-family:monospace; font-size:11.5px;">({cov_px} px)</span>
+            </div>
+            <div style="display:inline-flex; align-items:center; gap:6px; padding:3px 9px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px;">
+                <span style="color:#64748b; font-weight:500;">Total Instances</span>
+                <span style="background:#f0fdfa; color:#0d7c85; border:1px solid #ccfbf1; padding:1px 6px; border-radius:4px; font-family:monospace; font-weight:600;">{total_inst}</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
     if masks_info:

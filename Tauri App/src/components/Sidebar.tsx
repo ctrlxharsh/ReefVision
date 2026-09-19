@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Sliders, Palette, Cpu, ChevronRight, ChevronDown, Minus, Plus } from "lucide-react";
-import { BrandLogo } from "./BrandLogo";
+import { Sliders, Palette, Cpu, ChevronRight, ChevronDown, Minus, Plus, PanelLeftClose } from "lucide-react";
 import { UISelect, UISelectOption } from "./UISelect";
 import { InfoTooltip } from "./InfoTooltip";
 import { DeviceInfo, CoralSegment } from "../types";
@@ -45,6 +44,7 @@ const MAX_SIDEBAR_WIDTH = 540;
 
 export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
+  onToggleCollapse,
   pointsPerSide,
   onPointsPerSideChange,
   iouThresh,
@@ -184,8 +184,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
         maxWidth: `${dynamicWidth}px`,
       }}
     >
-      {/* Brand Header */}
-      <BrandLogo isSidebar={true} />
+      {/* Sidebar Header Title & Collapse Button */}
+      <div className="sidebar-header">
+        <div className="sidebar-title-group">
+          <Sliders size={16} className="sidebar-header-icon" />
+          <span className="sidebar-header-title">Analysis Controls</span>
+        </div>
+        <button
+          type="button"
+          className="sidebar-collapse-icon-btn"
+          onClick={onToggleCollapse}
+          title="Collapse sidebar"
+          aria-label="Collapse sidebar"
+        >
+          <PanelLeftClose size={16} />
+        </button>
+      </div>
 
       <div className="sidebar-content">
         {/* Expander 1: Inference Parameters */}

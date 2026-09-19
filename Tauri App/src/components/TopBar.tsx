@@ -1,11 +1,12 @@
 import React from "react";
 import { ArrowLeft, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { BrandLogo } from "./BrandLogo";
 import { DeviceInfo } from "../types";
 
 interface TopBarProps {
-  imageName: string;
-  currentIndex: number;
-  totalImages: number;
+  imageName?: string;
+  currentIndex?: number;
+  totalImages?: number;
   onBack: () => void;
   isSidebarCollapsed: boolean;
   onToggleSidebar: () => void;
@@ -13,9 +14,6 @@ interface TopBarProps {
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
-  imageName,
-  currentIndex,
-  totalImages,
   onBack,
   isSidebarCollapsed,
   onToggleSidebar,
@@ -23,7 +21,7 @@ export const TopBar: React.FC<TopBarProps> = ({
 }) => {
   return (
     <header className="top-navbar">
-      {/* Left side: Back to Selection & Sidebar Toggle */}
+      {/* Left side: Back to Selection & Sidebar Toggle (Icon-only) */}
       <div className="top-navbar-left">
         <button
           className="top-navbar-btn btn-back-selection"
@@ -37,24 +35,18 @@ export const TopBar: React.FC<TopBarProps> = ({
         <div className="top-navbar-divider" />
 
         <button
-          className="top-navbar-btn"
+          className="top-navbar-icon-btn"
           onClick={onToggleSidebar}
           title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           aria-label={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
           {isSidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-          <span className="btn-collapse-text">{isSidebarCollapsed ? "Show Sidebar" : "Hide Sidebar"}</span>
         </button>
       </div>
 
-      {/* Center: Image Name & Pill Counter */}
+      {/* Center: Andromeida Reef Vision Brand */}
       <div className="top-navbar-center">
-        <div className="image-title-bar">
-          <span className="img-title-text">{imageName}</span>
-          <span className="img-badge-counter">
-            Image {currentIndex + 1} of {totalImages}
-          </span>
-        </div>
+        <BrandLogo variant="topbar" />
       </div>
 
       {/* Right side: Hardware Engine Indicator */}
