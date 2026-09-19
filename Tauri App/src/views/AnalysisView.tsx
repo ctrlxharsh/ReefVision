@@ -261,14 +261,14 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
         {/* Main Studio Canvas & Results */}
         <main className="main-view">
           <div className="block-container">
-            {/* Gallery Navigation Toolbar: Extreme Left (Prev), Center (Name), Extreme Right (Next) */}
+            {/* Gallery Navigation Toolbar: Extreme Left (Prev + Left Pages), Center (Name), Extreme Right (Right Pages + Next) */}
             <PaginationBar
               currentIndex={currentIndex}
               totalImages={images.length}
               currentImageName={currentImage.name}
               onPrev={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
               onNext={() => setCurrentIndex((prev) => Math.min(prev + 1, images.length - 1))}
-              onBackToLibrary={onBackToUpload}
+              onSelectPage={(idx) => setCurrentIndex(idx)}
             />
 
             {/* Canvas Image Viewer with Hover Fullscreen & Coral Inspection */}

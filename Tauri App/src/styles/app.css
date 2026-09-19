@@ -436,57 +436,69 @@ html, body, #root {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 6px 0;
+  padding: 4px 0;
   margin-bottom: 0.85rem;
   gap: 12px;
 }
 
-.gallery-nav-left {
+.gallery-nav-wing {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 180px;
+  flex: 1;
+}
+
+.gallery-nav-wing.left {
+  justify-content: flex-start;
+}
+
+.gallery-nav-wing.right {
+  justify-content: flex-end;
+}
+
+.gallery-chips-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gallery-page-chip {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  color: var(--color-navy);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  box-shadow: 0 1px 2px rgba(15, 30, 74, 0.02);
+}
+
+.gallery-page-chip:hover {
+  background: var(--color-surface-subtle);
+  border-color: var(--color-teal);
+  color: var(--color-teal);
+  transform: translateY(-1px);
+}
+
+.gallery-page-ellipsis {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  padding: 0 2px;
+  letter-spacing: 1px;
 }
 
 .gallery-nav-center {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1;
-}
-
-.gallery-nav-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  min-width: 180px;
-}
-
-.gallery-library-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #ffffff;
-  border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  font-size: 0.78rem;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-}
-
-.gallery-library-btn:hover {
-  background: var(--color-surface-subtle);
-  border-color: var(--color-teal);
-  color: var(--color-teal);
-}
-
-.gallery-icon-library {
-  color: var(--color-teal);
+  flex-shrink: 0;
 }
 
 .gallery-nav-btn {

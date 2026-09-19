@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronLeft, ChevronRight, FolderOpen, FileImage } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileImage } from "lucide-react";
 
 interface PaginationBarProps {
   currentIndex: number;
@@ -7,7 +7,7 @@ interface PaginationBarProps {
   currentImageName: string;
   onPrev: () => void;
   onNext: () => void;
-  onBackToLibrary: () => void;
+  onSelectPage: (index: number) => void;
 }
 
 export const PaginationBar: React.FC<PaginationBarProps> = ({
@@ -16,37 +16,113 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
   currentImageName,
   onPrev,
   onNext,
-  onBackToLibrary,
+  onSelectPage,
 }) => {
-  return (
-    <nav className="gallery-nav-bar" aria-label="Image Navigation">
-      {/* Extreme Left: Back to Library & Previous Button */}
-      <div className="gallery-nav-left">
-        <button
-          type="button"
-          className="gallery-library-btn"
-          onClick={onBackToLibrary}
-          title="Return to image library"
-        >
-          <FolderOpen size={14} className="gallery-icon-library" />
-          <span>Library</span>
-        </button>
+  // Preceding pages (indices strictly before currentIndex)
+  const prevPages = Array.from({ length: currentIndex }, (_, i) => i);
 
-        {totalImages > 1 && (
+  // Succeeding pages (indices strictly after currentIndex)
+  const nextPages = Array.from(
+    { length: Math.max(0, totalImages - currentIndex - 1) },
+    (_, i) => currentIndex + 1 + i
+  );
+
+  const renderChips = (pages: number[], isLeading: boolean) => {
+    if (pages.length <= 5) {
+      return pages.map((pageIdx) => (
+        <button
+          key={pageIdx}
+          type="button"
+          className="gallery-page-chip"
+          onClick={() => onSelectPage(pageIdx)}
+          title={`Go to image ${pageIdx + 1}`}
+        >
+          {pageIdx + 1}
+        </button>
+      ));
+    }
+
+    // If more than 5 pages, use windowing with ellipsis
+    if (isLeading) {
+      const first = pages[0];
+      const tail = pages.slice(-2);
+      return (
+        <>
           <button
             type="button"
-            className="gallery-nav-btn prev"
-            onClick={onPrev}
-            disabled={currentIndex === 0}
-            title="Previous image (←)"
+            className="gallery-page-chip"
+            onClick={() => onSelectPage(first)}
+            title={`Go to image ${first + 1}`}
           >
-            <ChevronLeft size={16} />
-            <span>Previous</span>
+            {first + 1}
           </button>
+          <span className="gallery-page-ellipsis">•••</span>
+          {tail.map((pageIdx) => (
+            <button
+              key={pageIdx}
+              type="button"
+              className="gallery-page-chip"
+              onClick={() => onSelectPage(pageIdx)}
+              title={`Go to image ${pageIdx + 1}`}
+            >
+              {pageIdx + 1}
+            </button>
+          ))}
+        </>
+      );
+    } else {
+      const head = pages.slice(0, 2);
+      const last = pages[pages.length - 1];
+      return (
+        <>
+          {head.map((pageIdx) => (
+            <button
+              key={pageIdx}
+              type="button"
+              className="gallery-page-chip"
+              onClick={() => onSelectPage(pageIdx)}
+              title={`Go to image ${pageIdx + 1}`}
+            >
+              {pageIdx + 1}
+            </button>
+          ))}
+          <span className="gallery-page-ellipsis">•••</span>
+          <button
+            type="button"
+            className="gallery-page-chip"
+            onClick={() => onSelectPage(last)}
+            title={`Go to image ${last + 1}`}
+          >
+            {last + 1}
+          </button>
+        </>
+      );
+    }
+  };
+
+  return (
+    <nav className="gallery-nav-bar" aria-label="Image Navigation">
+      {/* Left Wing: Extreme Previous Button + Preceding Page Chips */}
+      <div className="gallery-nav-wing left">
+        <button
+          type="button"
+          className="gallery-nav-btn prev"
+          onClick={onPrev}
+          disabled={currentIndex === 0}
+          title="Previous image (←)"
+        >
+          <ChevronLeft size={16} />
+          <span>Previous</span>
+        </button>
+
+        {prevPages.length > 0 && (
+          <div className="gallery-chips-group">
+            {renderChips(prevPages, true)}
+          </div>
         )}
       </div>
 
-      {/* Center: File Name & Counter */}
+      {/* Center: Anchor Image Breadcrumb / File Pill */}
       <div className="gallery-nav-center">
         <div className="gallery-file-pill">
           <FileImage size={14} className="gallery-file-icon" />
@@ -60,20 +136,24 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
         </div>
       </div>
 
-      {/* Extreme Right: Next Button */}
-      <div className="gallery-nav-right">
-        {totalImages > 1 && (
-          <button
-            type="button"
-            className="gallery-nav-btn next"
-            onClick={onNext}
-            disabled={currentIndex === totalImages - 1}
-            title="Next image (→)"
-          >
-            <span>Next</span>
-            <ChevronRight size={16} />
-          </button>
+      {/* Right Wing: Succeeding Page Chips + Extreme Next Button */}
+      <div className="gallery-nav-wing right">
+        {nextPages.length > 0 && (
+          <div className="gallery-chips-group">
+            {renderChips(nextPages, false)}
+          </div>
         )}
+
+        <button
+          type="button"
+          className="gallery-nav-btn next"
+          onClick={onNext}
+          disabled={currentIndex === totalImages - 1}
+          title="Next image (→)"
+        >
+          <span>Next</span>
+          <ChevronRight size={16} />
+        </button>
       </div>
     </nav>
   );
