@@ -201,6 +201,22 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
     layoutMode,
   ]);
 
+  // Global arrow navigation between images
+  useEffect(() => {
+    const handleKeyNav = (e: KeyboardEvent) => {
+      if (["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)) {
+        return;
+      }
+      if (e.key === "ArrowLeft") {
+        setCurrentIndex((prev) => Math.max(prev - 1, 0));
+      } else if (e.key === "ArrowRight") {
+        setCurrentIndex((prev) => Math.min(prev + 1, images.length - 1));
+      }
+    };
+    window.addEventListener("keydown", handleKeyNav);
+    return () => window.removeEventListener("keydown", handleKeyNav);
+  }, [images.length]);
+
   return (
     <div className="analysis-layout">
       {/* Top Bar: Back, Andromeida Branding, Hardware Device */}
@@ -246,17 +262,8 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
         {/* Main Studio Canvas & Results */}
         <main className="main-view">
           <div className="block-container">
-            {/* Dedicated Pagination & Image Switcher */}
-            <PaginationBar
-              currentIndex={currentIndex}
-              totalImages={images.length}
-              onPrev={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
-              onNext={() => setCurrentIndex((prev) => Math.min(prev + 1, images.length - 1))}
-              onSelectPage={(idx) => setCurrentIndex(idx)}
-            />
-
-            {/* Left-Aligned Image Breadcrumb */}
-            <div className="image-breadcrumb-container">
+            {/* Unified Studio Navigation Toolbar (Breadcrumb + Pagination) */}
+            <div className="studio-nav-toolbar">
               <nav className="image-breadcrumb" aria-label="Breadcrumb">
                 <button
                   type="button"
@@ -276,6 +283,14 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                   Image {currentIndex + 1} of {images.length}
                 </span>
               </nav>
+
+              <PaginationBar
+                currentIndex={currentIndex}
+                totalImages={images.length}
+                onPrev={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
+                onNext={() => setCurrentIndex((prev) => Math.min(prev + 1, images.length - 1))}
+                onSelectPage={(idx) => setCurrentIndex(idx)}
+              />
             </div>
 
             {/* Canvas Image Viewer */}
