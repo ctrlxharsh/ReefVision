@@ -471,12 +471,23 @@ html, body, #root {
 }
 
 .expander-body {
-  padding: 12px 14px;
+  padding: 15px 14px 18px 14px;
   border-top: 1px solid var(--color-border);
   background: #ffffff;
 }
 
 /* Category Eyebrow Headers in Controls */
+.form-category-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.form-category-header-row .form-category-header {
+  margin-bottom: 0;
+}
+
 .form-category-header {
   display: block;
   font-size: 0.67rem;
@@ -489,20 +500,74 @@ html, body, #root {
 
 /* Form Groups & Sliders */
 .form-group {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.form-group-last {
+  margin-bottom: 4px;
 }
 
 .form-label-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.form-label-with-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .form-label {
   font-size: 0.76rem;
   font-weight: 450;
   color: #334155;
+}
+
+/* Radix UI Tooltip Styles */
+.info-tooltip-btn {
+  background: transparent;
+  border: none;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: color 0.15s ease, transform 0.1s ease;
+  line-height: 1;
+}
+
+.info-tooltip-btn:hover {
+  color: var(--color-teal);
+  transform: scale(1.1);
+}
+
+.info-tooltip-content {
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 0.73rem;
+  font-weight: 400;
+  line-height: 1.45;
+  padding: 8px 12px;
+  border-radius: 7px;
+  max-width: 250px;
+  box-shadow: 0 10px 25px -3px rgba(15, 23, 42, 0.3), 0 4px 6px -2px rgba(15, 23, 42, 0.1);
+  z-index: 10000;
+  animation: tooltipFadeIn 0.12s ease;
+  user-select: none;
+}
+
+.info-tooltip-arrow {
+  fill: #0f172a;
+}
+
+@keyframes tooltipFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .form-section-label {

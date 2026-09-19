@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Sliders, Palette, Cpu, ChevronRight, ChevronDown, Minus, Plus } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { UISelect, UISelectOption } from "./UISelect";
+import { InfoTooltip } from "./InfoTooltip";
 import { DeviceInfo, CoralSegment } from "../types";
 
 interface SidebarProps {
@@ -203,9 +204,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {paramsExpanded && (
             <div className="expander-body">
               {/* Points Per Side */}
-              <div className="form-group" title="Higher values detect smaller coral instances but take longer to process.">
+              <div className="form-group">
                 <div className="form-label-row">
-                  <span className="form-label">Points Per Side (Grid Density)</span>
+                  <div className="form-label-with-info">
+                    <span className="form-label">Points Per Side (Grid Density)</span>
+                    <InfoTooltip content="Density of input prompt points sampled across the image grid. Higher values (24–36) detect smaller coral fragments and intricate colonies, but increase processing time." />
+                  </div>
                   <span className="form-slider-val">{pointsPerSide}</span>
                 </div>
                 <input
@@ -220,9 +224,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               {/* IoU Confidence Threshold */}
-              <div className="form-group" title="Filters masks with model predicted quality below this cutoff.">
+              <div className="form-group">
                 <div className="form-label-row">
-                  <span className="form-label">IoU Confidence Threshold</span>
+                  <div className="form-label-with-info">
+                    <span className="form-label">IoU Confidence Threshold</span>
+                    <InfoTooltip content="Predicted Intersection-over-Union (IoU) quality cutoff. Discards masks with low model confidence to eliminate false positives." />
+                  </div>
                   <span className="form-slider-val">{iouThresh.toFixed(2)}</span>
                 </div>
                 <input
@@ -237,9 +244,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               {/* Stability Score Threshold */}
-              <div className="form-group" title="Filters masks with unstable boundary thresholds.">
+              <div className="form-group">
                 <div className="form-label-row">
-                  <span className="form-label">Stability Score Threshold</span>
+                  <div className="form-label-with-info">
+                    <span className="form-label">Stability Score Threshold</span>
+                    <InfoTooltip content="Filters masks with unstable boundaries across varying binarization cutoffs. Ensures coral outlines remain sharp and precise." />
+                  </div>
                   <span className="form-slider-val">{stabilityThresh.toFixed(2)}</span>
                 </div>
                 <input
@@ -254,9 +264,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               {/* Minimum Mask Area (px) - Solid Stepper */}
-              <div className="form-group" style={{ marginBottom: 0 }} title="Removes tiny noise fragments below this pixel count.">
-                <div className="form-label-row" style={{ marginBottom: "6px" }}>
-                  <span className="form-label">Minimum Mask Area (px)</span>
+              <div className="form-group form-group-last">
+                <div className="form-label-row">
+                  <div className="form-label-with-info">
+                    <span className="form-label">Minimum Mask Area (px)</span>
+                    <InfoTooltip content="Minimum pixel count threshold for detected corals. Discards tiny noise specks and negligible debris below this size." />
+                  </div>
                   <span className="form-slider-val">{minAreaPx} px</span>
                 </div>
                 <div className="stepper-box">
@@ -313,7 +326,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="expander-body">
               {/* Layout View: Segmented Control */}
               <div className="form-group">
-                <span className="form-category-header">LAYOUT VIEW</span>
+                <div className="form-category-header-row">
+                  <span className="form-category-header">LAYOUT VIEW</span>
+                  <InfoTooltip content="Switch between dual comparison canvas, full overlay, source image only, or isolated coral masks on black background." />
+                </div>
                 <div className="segmented-control">
                   {layoutOpts.map((opt) => (
                     <button
@@ -330,7 +346,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Overlay Color Mode: Clean Radio List */}
               <div className="form-group">
-                <span className="form-category-header">OVERLAY COLOR MODE</span>
+                <div className="form-category-header-row">
+                  <span className="form-category-header">OVERLAY COLOR MODE</span>
+                  <InfoTooltip content="Choose mask coloring: individual colony instances, health condition status (healthy green vs bleached red), or taxonomic genus classification." />
+                </div>
                 <div className="radio-list">
                   {colorModes.map((m) => (
                     <label key={m.id} className={`radio-item ${colorMode === m.id ? "checked" : ""}`}>
@@ -350,7 +369,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {/* Overlay Transparency (Alpha) */}
               <div className="form-group">
                 <div className="form-label-row">
-                  <span className="form-label">Overlay Transparency (Alpha)</span>
+                  <div className="form-label-with-info">
+                    <span className="form-label">Overlay Transparency (Alpha)</span>
+                    <InfoTooltip content="Blends the mask colors over the original underwater photograph. Lower values reveal more photographic texture; higher values emphasize segmentation coverage." />
+                  </div>
                   <span className="form-slider-val">{alpha.toFixed(2)}</span>
                 </div>
                 <input
@@ -366,7 +388,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Two Column Checkboxes */}
               <div className="form-group">
-                <span className="form-category-header">ANNOTATION OVERLAYS</span>
+                <div className="form-category-header-row">
+                  <span className="form-category-header">ANNOTATION OVERLAYS</span>
+                  <InfoTooltip content="Toggle visual annotations: sharp contour boundaries, colony centroid ID badges, and bounding boxes." />
+                </div>
                 <div className="checkbox-columns">
                   <div className="checkbox-col">
                     <label className="checkbox-item" title="Draw sharp contour borders around corals">
@@ -400,8 +425,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               {/* Highlight Specific Segment */}
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <span className="form-category-header">HIGHLIGHT SEGMENT</span>
+              <div className="form-group form-group-last">
+                <div className="form-category-header-row">
+                  <span className="form-category-header">HIGHLIGHT SEGMENT</span>
+                  <InfoTooltip content="Dim all other coral colonies to isolate and inspect a specific detected segment." />
+                </div>
                 <UISelect
                   value={selectedMaskId === null ? "all" : String(selectedMaskId)}
                   onChange={(val) => onSelectMaskId(val === "all" ? null : Number(val))}
@@ -442,8 +470,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {deviceInfo.gpu_name}
                 </div>
               )}
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <span className="form-category-header">DEVICE PREFERENCE</span>
+              <div className="form-group form-group-last">
+                <div className="form-category-header-row">
+                  <span className="form-category-header">DEVICE PREFERENCE</span>
+                  <InfoTooltip content="Choose compute hardware engine: NVIDIA CUDA GPU, Apple CoreML, or Multi-Threaded CPU." />
+                </div>
                 <UISelect
                   value={devicePreference}
                   onChange={onDevicePreferenceChange}
