@@ -112,14 +112,19 @@ def render_upload_page():
             )
 
             if all_downloaded:
+                c_pill, c_redownload = st.columns([2.5, 1.2])
+                with c_pill:
+                    st.markdown("<div class='models-ready-pill'>✓ Foundation Models Ready</div>", unsafe_allow_html=True)
+                with c_redownload:
+                    if st.button("↻ Re-download", key="redownload_btn", help="Force re-download foundation models from Hugging Face"):
+                        st.session_state["force_redownload_triggered"] = True
+                        st.rerun()
+
                 st.markdown(
-                    "<div class='models-status-block'>"
-                    "<div class='models-ready-pill'>✓ Foundation Models Ready</div>"
-                    "<div class='model-chips-row'>"
-                    "<span class='model-chip'>Segmentation Model</span>"
-                    "<span class='model-chip'>Taxonomical Model</span>"
-                    "<span class='model-chip'>Bleach Detection Model</span>"
-                    "</div>"
+                    "<div class='model-chips-row' style='margin-bottom: 1rem;'>"
+                    "<span class='model-chip ready'>✓ Segmentation Model</span>"
+                    "<span class='model-chip ready'>✓ Taxonomical Model</span>"
+                    "<span class='model-chip ready'>✓ Bleach Detection Model</span>"
                     "</div>",
                     unsafe_allow_html=True,
                 )
@@ -139,9 +144,10 @@ def render_upload_page():
                 if device_info.get("device_type") == "gpu" or active_provider.startswith("CUDA"):
                     st.markdown(f"<div class='hw-badge hw-cuda'>GPU: {device_label}</div>", unsafe_allow_html=True)
                 elif mode == "cpu":
-                    st.markdown(f"<div class='hw-badge hw-cpu-single'>CPU (Single-Threaded): {device_label}</div>", unsafe_allow_html=True)
+                    st.markdown("<div class='hw-badge hw-cpu-single'>Single-Threaded CPU Engine (1 Thread)</div>", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"<div class='hw-badge hw-cpu'>Multi-Threaded CPU: {device_label}</div>", unsafe_allow_html=True)
+                    engine_display = device_label if "Engine" in device_label else f"Multi-Threaded CPU ({cpu_count} Threads)"
+                    st.markdown(f"<div class='hw-badge hw-cpu'>{engine_display}</div>", unsafe_allow_html=True)
 
                 def _format_dev_upload(opt: str) -> str:
                     if opt == "auto":

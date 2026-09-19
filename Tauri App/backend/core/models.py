@@ -107,20 +107,37 @@ def get_cached_model_path(filename: str) -> Optional[str]:
     return None
 
 
+def reset_cached_sessions():
+    """Clears in-memory ONNX Runtime sessions to allow fresh weight reloads."""
+    global _SAM_BUNDLE, _SAM_CACHE_KEY, _SAM_MTIME
+    global _BIOCLIP_BUNDLE, _BIOCLIP_CACHE_KEY
+    global _BLEACHING_SESSION, _BLEACHING_CACHE_KEY
+    _SAM_BUNDLE = None
+    _SAM_CACHE_KEY = None
+    _SAM_MTIME = None
+    _BIOCLIP_BUNDLE = None
+    _BIOCLIP_CACHE_KEY = None
+    _BLEACHING_SESSION = None
+    _BLEACHING_CACHE_KEY = None
+
+
 def find_or_download_onnx_model(
     filename: str,
     cache_dir: Optional[str] = None,
     progress_callback: Optional[Callable[[int, Optional[int], str], None]] = None,
+    force_download: bool = False,
 ) -> str:
     """
     Locates an ONNX model file on local disk or streams it on demand from Hugging Face.
+    When force_download is True, bypasses local caches and fetches fresh weights.
     """
-    cached_path = get_cached_model_path(filename)
-    if cached_path is not None:
-        if progress_callback is not None:
-            size = os.path.getsize(cached_path)
-            progress_callback(size, size, filename)
-        return cached_path
+    if not force_download:
+        cached_path = get_cached_model_path(filename)
+        if cached_path is not None:
+            if progress_callback is not None:
+                size = os.path.getsize(cached_path)
+                progress_callback(size, size, filename)
+            return cached_path
 
     class CallbackTqdm(tqdm):
         def __init__(self, *args, **kwargs):
@@ -148,6 +165,7 @@ def find_or_download_onnx_model(
             filename=filename,
             cache_dir=cache_dir,
             local_files_only=False,
+            force_download=force_download,
         )
         return local_path
     finally:
@@ -186,17 +204,29 @@ def check_models_download_status() -> Tuple[bool, List[Dict[str, Any]]]:
 def download_all_models(
     cache_dir: Optional[str] = None,
     progress_callback: Optional[Callable] = None,
+    force_download: bool = False,
+    target_files: Optional[List[str]] = None,
 ) -> Dict[str, str]:
     """
-    Downloads all 5 foundation models with progress callbacks.
+    Downloads foundation models with progress callbacks.
+    When force_download is True, forces fetching from Hugging Face even if cached.
     Supports either an info dictionary callback or a (filename, curr, total) callback.
     """
+    if force_download:
+        reset_cached_sessions()
+
+    specs = FOUNDATION_MODEL_SPECS
+    if target_files:
+        filtered = [s for s in specs if s["filename"] in target_files]
+        if filtered:
+            specs = filtered
+
     downloaded_paths = {}
-    total_files = len(FOUNDATION_MODEL_SPECS)
-    total_bytes_est = sum(spec["approx_size"] for spec in FOUNDATION_MODEL_SPECS)
+    total_files = len(specs)
+    total_bytes_est = sum(spec["approx_size"] for spec in specs)
     completed_bytes_prior = 0
 
-    for idx, spec in enumerate(FOUNDATION_MODEL_SPECS):
+    for idx, spec in enumerate(specs):
         fname = spec["filename"]
         approx_sz = spec["approx_size"]
 
@@ -223,7 +253,12 @@ def download_all_models(
                     except TypeError:
                         progress_callback(curr, total, _f)
 
-        path = find_or_download_onnx_model(fname, cache_dir=cache_dir, progress_callback=_cb)
+        path = find_or_download_onnx_model(
+            fname,
+            cache_dir=cache_dir,
+            progress_callback=_cb,
+            force_download=force_download,
+        )
         downloaded_paths[fname] = path
         completed_bytes_prior += approx_sz
     return downloaded_paths

@@ -43,6 +43,7 @@ from core.export import build_coco_json
 from app.schemas import (
     DevicePreferenceRequest,
     ModelStatusResponse,
+    ModelDownloadRequest,
     SegmentRequest,
     EnrichRequest,
     OverlayRequest,
@@ -151,17 +152,23 @@ def get_download_progress():
 
 
 @app.post("/api/models/download")
-def trigger_model_download(background_tasks: BackgroundTasks):
-    """Triggers downloading all foundation models in background."""
+def trigger_model_download(
+    background_tasks: BackgroundTasks,
+    req: Optional[ModelDownloadRequest] = None,
+):
+    """Triggers downloading or force re-downloading foundation models in background."""
     global _DOWNLOAD_PROGRESS
     if _DOWNLOAD_PROGRESS["is_downloading"]:
         return {"status": "in_progress", "progress": _DOWNLOAD_PROGRESS}
+
+    force = req.force if req else False
+    target_filename = req.filename if req else None
 
     _DOWNLOAD_PROGRESS = {
         "is_downloading": True,
         "overall_pct": 0,
         "current_file": "Connecting to Hugging Face...",
-        "detail": "Initializing download manager",
+        "detail": "Initializing force re-download..." if force else "Initializing download manager",
         "error": None,
     }
 
@@ -179,7 +186,12 @@ def trigger_model_download(background_tasks: BackgroundTasks):
                     "detail": f"{curr_mb:.1f} MB / {tot_mb:.1f} MB ({pct}%)",
                 })
 
-            download_all_models(progress_callback=_cb)
+            target_files = [target_filename] if target_filename else None
+            download_all_models(
+                progress_callback=_cb,
+                force_download=force,
+                target_files=target_files,
+            )
 
             # Warm up sessions
             load_coralscop_model(device=_ACTIVE_DEVICE_PREF)
@@ -200,7 +212,7 @@ def trigger_model_download(background_tasks: BackgroundTasks):
             })
 
     background_tasks.add_task(_download_task)
-    return {"status": "started"}
+    return {"status": "started", "force": force}
 
 
 @app.get("/api/samples")

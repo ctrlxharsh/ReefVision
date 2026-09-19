@@ -7,6 +7,10 @@ import {
   AlertCircle,
   RefreshCw,
   CheckCircle2,
+  Check,
+  RotateCcw,
+  Cpu,
+  Zap,
 } from "lucide-react";
 import JSZip from "jszip";
 import { BrandLogo } from "../components/BrandLogo";
@@ -160,10 +164,10 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
     }
   };
 
-  // Trigger Download & Poll Progress
-  const handleStartDownload = async () => {
+  // Trigger Download / Force Redownload & Poll Progress
+  const handleStartDownload = async (force: boolean = false, filename?: string) => {
     try {
-      await triggerModelDownload();
+      await triggerModelDownload(force, filename);
       const interval = setInterval(async () => {
         try {
           const prog = await getDownloadProgress();
@@ -183,6 +187,52 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
     } catch (e) {
       alert(`Download trigger error: ${e}`);
     }
+  };
+
+  // Check readiness of model groups
+  const isSamReady = useMemo(() => {
+    if (allDownloaded) return true;
+    if (modelsList.length === 0) return allDownloaded;
+    const enc = modelsList.find((m) => m.filename.includes("sam_image_encoder"));
+    const dec = modelsList.find((m) => m.filename.includes("sam_mask_decoder"));
+    return Boolean(enc?.cached && dec?.cached);
+  }, [allDownloaded, modelsList]);
+
+  const isBioClipReady = useMemo(() => {
+    if (allDownloaded) return true;
+    if (modelsList.length === 0) return allDownloaded;
+    const clip = modelsList.find((m) => m.filename.includes("bioclip"));
+    const emb = modelsList.find((m) => m.filename.includes("taxonomy"));
+    return Boolean(clip?.cached && emb?.cached);
+  }, [allDownloaded, modelsList]);
+
+  const isBleachReady = useMemo(() => {
+    if (allDownloaded) return true;
+    if (modelsList.length === 0) return allDownloaded;
+    const bl = modelsList.find((m) => m.filename.includes("bleaching"));
+    return Boolean(bl?.cached);
+  }, [allDownloaded, modelsList]);
+
+  const getEngineName = (info: DeviceInfo | null): string => {
+    if (!info) return "Detecting compute hardware...";
+    if (info.device_type === "gpu" || info.active_provider?.includes("CUDA")) {
+      return info.gpu_name || "NVIDIA CUDA GPU";
+    }
+    if (info.mode === "cpu") {
+      return "Single-Threaded CPU Engine (1 Thread)";
+    }
+    if (info.cpu_count && info.cpu_count > 1) {
+      return `Multi-Threaded CPU Engine (${info.cpu_count} Threads)`;
+    }
+    return info.gpu_name || "CPU Engine";
+  };
+
+  const getEngineBadgeClass = (info: DeviceInfo | null): string => {
+    if (!info) return "cpu";
+    if (info.device_type === "gpu" || info.active_provider?.includes("CUDA")) return "cuda";
+    if (info.active_provider?.includes("CoreML") || info.active_provider?.includes("DirectML")) return "coreml";
+    if (info.mode === "cpu") return "cpu-single";
+    return "cpu";
   };
 
   // Compute active sample subset
@@ -348,39 +398,93 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
           </div>
 
           {allDownloaded && isBackendConnected && (
-            <div>
-              <div className="models-ready-pill">✓ Foundation Models Ready</div>
-              <div className="model-chips-row">
-                <span className="model-chip">Segmentation Model</span>
-                <span className="model-chip">Taxonomical Model</span>
-                <span className="model-chip">Bleach Detection Model</span>
+            <div className="models-status-container">
+              <div className="models-status-header">
+                <div className="models-ready-pill">
+                  <CheckCircle2 size={13} className="ready-icon" />
+                  <span>Foundation Models Ready</span>
+                </div>
+                <button
+                  type="button"
+                  className="btn-redownload"
+                  onClick={() => handleStartDownload(true)}
+                  disabled={downloadProgress.is_downloading}
+                  title="Force re-download all model weights from Hugging Face"
+                >
+                  <RotateCcw size={12} className={downloadProgress.is_downloading ? "spin" : ""} />
+                  <span>{downloadProgress.is_downloading ? "Re-downloading..." : "Re-download"}</span>
+                </button>
               </div>
+
+              <div className="model-chips-row">
+                <span
+                  className={`model-chip ${isSamReady ? "ready" : "needed"}`}
+                  title={isSamReady ? "SAM ViT-B Segmentation Model Ready" : "Download Required"}
+                >
+                  <Check size={11} className="chip-check" />
+                  <span>Segmentation Model</span>
+                </span>
+                <span
+                  className={`model-chip ${isBioClipReady ? "ready" : "needed"}`}
+                  title={isBioClipReady ? "BioCLIP Taxonomy Model Ready" : "Download Required"}
+                >
+                  <Check size={11} className="chip-check" />
+                  <span>Taxonomical Model</span>
+                </span>
+                <span
+                  className={`model-chip ${isBleachReady ? "ready" : "needed"}`}
+                  title={isBleachReady ? "NOAA Bleach Detection Model Ready" : "Download Required"}
+                >
+                  <Check size={11} className="chip-check" />
+                  <span>Bleach Detection Model</span>
+                </span>
+              </div>
+
+              {downloadProgress.is_downloading && (
+                <div className="redownload-progress-box">
+                  <div className="progress-info-row">
+                    <span className="progress-filename">{downloadProgress.current_file}</span>
+                    <span className="progress-pct">{downloadProgress.overall_pct}%</span>
+                  </div>
+                  <div className="redownload-progress-bar-bg">
+                    <div
+                      className="redownload-progress-bar-fill"
+                      style={{ width: `${downloadProgress.overall_pct}%` }}
+                    />
+                  </div>
+                  <div className="progress-detail">{downloadProgress.detail}</div>
+                </div>
+              )}
             </div>
           )}
 
           {/* Hardware Acceleration Subcard */}
           <div className="hw-card">
-            <div className="hw-box-title">Hardware Acceleration</div>
-            {deviceInfo && (
-              <div
-                className={`hw-badge ${
-                  deviceInfo.device_type === "gpu" || deviceInfo.active_provider.includes("CUDA")
-                    ? "hw-cuda"
-                    : deviceInfo.mode === "cpu"
-                    ? "hw-cpu-single"
-                    : "hw-cpu"
-                }`}
-              >
-                {deviceInfo.device_type === "gpu" || deviceInfo.active_provider.includes("CUDA")
-                  ? `GPU: ${deviceInfo.gpu_name}`
-                  : deviceInfo.mode === "cpu"
-                  ? `CPU (Single-Threaded): ${deviceInfo.gpu_name}`
-                  : `Multi-Threaded CPU: ${deviceInfo.gpu_name}`}
+            <div className="hw-card-header">
+              <div className="hw-title-group">
+                <Cpu size={14} className="hw-icon" />
+                <span className="hw-box-title">HARDWARE ACCELERATION</span>
               </div>
-            )}
+              <div className="hw-live-status">
+                <span className="hw-live-dot" />
+                <span className="hw-live-text">Active</span>
+              </div>
+            </div>
 
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: "0.76rem" }}>
+            <div className="hw-active-row">
+              <span className="hw-field-label">Active Engine</span>
+              <div className={`hw-badge ${getEngineBadgeClass(deviceInfo)}`}>
+                {deviceInfo?.device_type === "gpu" || deviceInfo?.active_provider?.includes("CUDA") ? (
+                  <Zap size={11} className="hw-badge-icon" />
+                ) : (
+                  <Cpu size={11} className="hw-badge-icon" />
+                )}
+                <span>{getEngineName(deviceInfo)}</span>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0, marginTop: "0.85rem" }}>
+              <label className="form-label hw-select-label">
                 Device Preference
               </label>
               <UISelect
@@ -410,6 +514,12 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                 ]}
                 placeholder="Select device"
               />
+            </div>
+
+            <div className="hw-footer-note">
+              {deviceInfo?.gpu_available
+                ? "Tensor operations accelerated natively via local GPU execution provider."
+                : "Parallel tensor operations accelerated across all CPU cores via ONNX Runtime."}
             </div>
           </div>
         </div>
@@ -459,7 +569,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                 <button
                   className="btn btn-primary btn-block"
                   style={{ padding: "12px" }}
-                  onClick={handleStartDownload}
+                  onClick={() => handleStartDownload(false)}
                   disabled={downloadProgress.is_downloading}
                 >
                   <DownloadCloud size={18} />

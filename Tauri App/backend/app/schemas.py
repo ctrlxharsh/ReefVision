@@ -34,6 +34,11 @@ class ModelStatusResponse(BaseModel):
     device_info: Dict[str, Any]
 
 
+class ModelDownloadRequest(BaseModel):
+    force: bool = Field(default=False, description="Force re-download from Hugging Face even if cached")
+    filename: Optional[str] = Field(default=None, description="Specific model filename or None for all models")
+
+
 class SegmentRequest(BaseModel):
     image_name: str
     image_base64: Optional[str] = None

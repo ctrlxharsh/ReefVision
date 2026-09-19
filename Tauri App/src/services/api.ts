@@ -26,8 +26,12 @@ export async function getModelsStatus(): Promise<ModelStatusResponse> {
   return res.json();
 }
 
-export async function triggerModelDownload(): Promise<void> {
-  const res = await fetch(`${API_BASE}/models/download`, { method: "POST" });
+export async function triggerModelDownload(force: boolean = false, filename?: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/models/download`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ force, filename }),
+  });
   if (!res.ok) throw new Error("Failed to start model download");
 }
 
