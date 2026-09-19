@@ -930,7 +930,7 @@ html, body, #root {
   top: 0;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 3.5px;
 }
 
 .metric-card-1::before { background: linear-gradient(90deg, #0f1e4a, #0d7c85); }
@@ -939,20 +939,20 @@ html, body, #root {
 .metric-card-4::before { background: linear-gradient(90deg, #4f46e5, #818cf8); }
 
 .metric-card-val {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 1.85rem;
+  font-weight: 800;
   color: #0f1e4a;
   letter-spacing: -0.02em;
-  line-height: 1.15;
+  line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
 
 .metric-card-lbl {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   color: #64748b;
-  font-weight: 500;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   margin-top: 6px;
 }
 
