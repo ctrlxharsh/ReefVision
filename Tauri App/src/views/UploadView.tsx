@@ -475,12 +475,14 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                     <span>{downloadProgress.current_file}</span>
                     <span>{downloadProgress.overall_pct}%</span>
                   </div>
-                  <div className="table-progress-bg" style={{ height: 10 }}>
+                  <div className="table-progress-bg" style={{ height: 4, borderRadius: 9999, overflow: "hidden" }}>
                     <div
                       className="table-progress-bar"
                       style={{
                         width: `${downloadProgress.overall_pct}%`,
                         background: "var(--gradient-brand)",
+                        height: "100%",
+                        borderRadius: 9999,
                       }}
                     />
                   </div>

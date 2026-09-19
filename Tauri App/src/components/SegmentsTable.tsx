@@ -45,7 +45,7 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
       }),
       columnHelper.accessor("genus", {
         header: "Taxon Genus",
-        cell: (info) => <span style={{ fontWeight: 600 }}>{info.getValue()}</span>,
+        cell: (info) => <span className="table-genus-text">{info.getValue()}</span>,
       }),
       columnHelper.accessor("growth_form", {
         header: "Growth Form",
@@ -110,7 +110,7 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
       }),
       columnHelper.accessor("predicted_iou", {
         header: "IoU Confidence",
-        cell: (info) => <span className="mono-val font-semibold">{info.getValue().toFixed(3)}</span>,
+        cell: (info) => <span className="mono-val">{info.getValue().toFixed(3)}</span>,
       }),
     ],
     []

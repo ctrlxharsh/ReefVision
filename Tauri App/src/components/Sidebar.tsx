@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Sliders, Palette, Cpu, ChevronRight, ChevronDown, Minus, Plus } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { UISelect, UISelectOption } from "./UISelect";
@@ -38,6 +38,10 @@ interface SidebarProps {
   onDevicePreferenceChange: (val: string) => void;
 }
 
+const DEFAULT_SIDEBAR_WIDTH = 320;
+const MIN_SIDEBAR_WIDTH = 260;
+const MAX_SIDEBAR_WIDTH = 540;
+
 export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   pointsPerSide,
@@ -70,6 +74,70 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [paramsExpanded, setParamsExpanded] = useState(true);
   const [displayExpanded, setDisplayExpanded] = useState(true);
   const [hwExpanded, setHwExpanded] = useState(false);
+
+  // Adjustable Sidebar Width
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("reef_sidebar_width");
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= MIN_SIDEBAR_WIDTH && parsed <= MAX_SIDEBAR_WIDTH) {
+          return parsed;
+        }
+      }
+    } catch {
+      // fallback
+    }
+    return DEFAULT_SIDEBAR_WIDTH;
+  });
+
+  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
+
+  const startResizing = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    isDraggingRef.current = true;
+  }, []);
+
+  const resetWidth = useCallback(() => {
+    setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
+    try {
+      localStorage.setItem("reef_sidebar_width", String(DEFAULT_SIDEBAR_WIDTH));
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current) return;
+      const newWidth = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, e.clientX));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        setIsDragging(false);
+        try {
+          localStorage.setItem("reef_sidebar_width", String(sidebarWidth));
+        } catch {}
+      }
+    };
+
+    if (isDragging) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isDragging, sidebarWidth]);
 
   const layoutOpts = [
     "Side-by-Side",
@@ -104,8 +172,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onMinAreaPxChange(nextVal);
   };
 
+  const dynamicWidth = isCollapsed ? 0 : sidebarWidth;
+
   return (
-    <aside className={`app-sidebar ${isCollapsed ? "collapsed" : ""}`}>
+    <aside
+      className={`app-sidebar ${isCollapsed ? "collapsed" : ""}`}
+      style={{
+        width: `${dynamicWidth}px`,
+        minWidth: `${dynamicWidth}px`,
+        maxWidth: `${dynamicWidth}px`,
+      }}
+    >
       {/* Brand Header */}
       <BrandLogo isSidebar={true} />
 
@@ -117,10 +194,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => setParamsExpanded(!paramsExpanded)}
           >
             <div className="expander-title-group">
-              <Sliders size={15} className="expander-icon" />
-              <span>Inference Parameters</span>
+              <Sliders size={14} className="expander-icon" />
+              <span className="expander-title">Inference Parameters</span>
             </div>
-            {paramsExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+            {paramsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </div>
 
           {paramsExpanded && (
@@ -176,10 +253,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 />
               </div>
 
-              {/* Minimum Mask Area (px) - Clean Stepper Input */}
+              {/* Minimum Mask Area (px) - Solid Stepper */}
               <div className="form-group" style={{ marginBottom: 0 }} title="Removes tiny noise fragments below this pixel count.">
-                <span className="form-label" style={{ marginBottom: "6px", display: "block" }}>Minimum Mask Area (px)</span>
+                <div className="form-label-row" style={{ marginBottom: "6px" }}>
+                  <span className="form-label">Minimum Mask Area (px)</span>
+                  <span className="form-slider-val">{minAreaPx} px</span>
+                </div>
                 <div className="stepper-box">
+                  <button
+                    type="button"
+                    className="stepper-btn"
+                    onClick={() => handleMinAreaStep(-50)}
+                    title="Decrease by 50 px"
+                    aria-label="Decrease mask area"
+                  >
+                    <Minus size={13} />
+                  </button>
                   <input
                     type="number"
                     className="stepper-input"
@@ -195,18 +284,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <button
                     type="button"
                     className="stepper-btn"
-                    onClick={() => handleMinAreaStep(-50)}
-                    title="Decrease mask area cutoff"
-                  >
-                    <Minus size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    className="stepper-btn"
                     onClick={() => handleMinAreaStep(50)}
-                    title="Increase mask area cutoff"
+                    title="Increase by 50 px"
+                    aria-label="Increase mask area"
                   >
-                    <Plus size={12} />
+                    <Plus size={13} />
                   </button>
                 </div>
               </div>
@@ -221,17 +303,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => setDisplayExpanded(!displayExpanded)}
           >
             <div className="expander-title-group">
-              <Palette size={15} className="expander-icon" />
-              <span>Display Controls</span>
+              <Palette size={14} className="expander-icon" />
+              <span className="expander-title">Display Controls</span>
             </div>
-            {displayExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+            {displayExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </div>
 
           {displayExpanded && (
             <div className="expander-body">
               {/* Layout View: Segmented Control */}
               <div className="form-group">
-                <span className="form-section-label">Layout View</span>
+                <span className="form-category-header">LAYOUT VIEW</span>
                 <div className="segmented-control">
                   {layoutOpts.map((opt) => (
                     <button
@@ -248,7 +330,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Overlay Color Mode: Clean Radio List */}
               <div className="form-group">
-                <span className="form-section-label">Overlay Color Mode</span>
+                <span className="form-category-header">OVERLAY COLOR MODE</span>
                 <div className="radio-list">
                   {colorModes.map((m) => (
                     <label key={m.id} className={`radio-item ${colorMode === m.id ? "checked" : ""}`}>
@@ -284,6 +366,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Two Column Checkboxes */}
               <div className="form-group">
+                <span className="form-category-header">ANNOTATION OVERLAYS</span>
                 <div className="checkbox-columns">
                   <div className="checkbox-col">
                     <label className="checkbox-item" title="Draw sharp contour borders around corals">
@@ -318,7 +401,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Highlight Specific Segment */}
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <span className="form-section-label">Highlight Specific Segment</span>
+                <span className="form-category-header">HIGHLIGHT SEGMENT</span>
                 <UISelect
                   value={selectedMaskId === null ? "all" : String(selectedMaskId)}
                   onChange={(val) => onSelectMaskId(val === "all" ? null : Number(val))}
@@ -337,10 +420,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => setHwExpanded(!hwExpanded)}
           >
             <div className="expander-title-group">
-              <Cpu size={15} className="expander-icon" />
-              <span>Hardware Engine</span>
+              <Cpu size={14} className="expander-icon" />
+              <span className="expander-title">Hardware Acceleration</span>
             </div>
-            {hwExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+            {hwExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </div>
 
           {hwExpanded && (
@@ -354,13 +437,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       ? "coreml"
                       : "cpu"
                   }`}
-                  style={{ width: "100%", justifyContent: "center", marginBottom: "0.6rem" }}
+                  style={{ width: "100%", justifyContent: "center", marginBottom: "0.75rem" }}
                 >
                   {deviceInfo.gpu_name}
                 </div>
               )}
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <span className="form-label" style={{ marginBottom: "5px", display: "block" }}>Device Preference</span>
+                <span className="form-category-header">DEVICE PREFERENCE</span>
                 <UISelect
                   value={devicePreference}
                   onChange={onDevicePreferenceChange}
@@ -372,6 +455,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
       </div>
+
+      {/* Resizer Handle on Right Edge */}
+      {!isCollapsed && (
+        <div
+          className={`sidebar-resizer ${isDragging ? "active" : ""}`}
+          onMouseDown={startResizing}
+          onDoubleClick={resetWidth}
+          title="Drag to resize sidebar • Double-click to reset (320px)"
+        />
+      )}
     </aside>
   );
 };
