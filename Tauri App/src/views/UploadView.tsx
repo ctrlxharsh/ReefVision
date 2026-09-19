@@ -547,23 +547,59 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                 </div>
               </div>
 
-              {modelsList.map((m) => (
-                <div key={m.filename} className="model-item">
-                  <div>
-                    <span className="model-name">{m.name}</span>
-                    <span className="model-task">
-                      {m.task} ({m.size})
-                    </span>
+              <div className="models-required-list">
+                {modelsList.map((m) => (
+                  <div key={m.filename} className="model-item">
+                    <div className="model-item-info">
+                      <div className="model-name">{m.name}</div>
+                      <div className="model-meta">
+                        <span className="model-task">{m.task}</span>
+                        <span className="model-size-badge">{m.size}</span>
+                      </div>
+                    </div>
+                    <div className="model-item-actions">
+                      <span
+                        className={
+                          m.cached ? "model-badge-cached" : "model-badge-needed"
+                        }
+                      >
+                        {m.cached ? (
+                          <>
+                            <Check size={11} className="badge-icon" />
+                            <span>Downloaded</span>
+                          </>
+                        ) : (
+                          <>
+                            <DownloadCloud size={11} className="badge-icon" />
+                            <span>Download Required</span>
+                          </>
+                        )}
+                      </span>
+                      {m.cached ? (
+                        <button
+                          type="button"
+                          className="btn-model-action"
+                          onClick={() => handleStartDownload(true, m.filename)}
+                          disabled={downloadProgress.is_downloading}
+                          title={`Re-download ${m.name}`}
+                        >
+                          <RotateCcw size={12} className={downloadProgress.is_downloading && downloadProgress.current_file.includes(m.name) ? "spin" : ""} />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-model-action primary"
+                          onClick={() => handleStartDownload(false, m.filename)}
+                          disabled={downloadProgress.is_downloading}
+                          title={`Download ${m.name}`}
+                        >
+                          <DownloadCloud size={12} className={downloadProgress.is_downloading && downloadProgress.current_file.includes(m.name) ? "spin" : ""} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <span
-                    className={
-                      m.cached ? "model-badge-cached" : "model-badge-needed"
-                    }
-                  >
-                    {m.cached ? "Downloaded" : "Download Required"}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
 
               <div style={{ marginTop: "1.25rem" }}>
                 <button
