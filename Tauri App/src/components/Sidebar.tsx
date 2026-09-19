@@ -76,19 +76,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [displayExpanded, setDisplayExpanded] = useState(true);
   const [hwExpanded, setHwExpanded] = useState(false);
 
-  // Adjustable Sidebar Width
+  // Adjustable Sidebar Width (Hardware-accelerated drag with zero-lag rAF)
+  const sidebarRef = useRef<HTMLElement>(null);
+  const widthRef = useRef<number>(DEFAULT_SIDEBAR_WIDTH);
+  const rafIdRef = useRef<number | null>(null);
+
   const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
     try {
       const saved = localStorage.getItem("reef_sidebar_width");
       if (saved) {
         const parsed = parseInt(saved, 10);
         if (!isNaN(parsed) && parsed >= MIN_SIDEBAR_WIDTH && parsed <= MAX_SIDEBAR_WIDTH) {
+          widthRef.current = parsed;
           return parsed;
         }
       }
     } catch {
       // fallback
     }
+    widthRef.current = DEFAULT_SIDEBAR_WIDTH;
     return DEFAULT_SIDEBAR_WIDTH;
   });
 
@@ -102,43 +108,72 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, []);
 
   const resetWidth = useCallback(() => {
+    widthRef.current = DEFAULT_SIDEBAR_WIDTH;
     setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
+    if (sidebarRef.current) {
+      sidebarRef.current.style.width = `${DEFAULT_SIDEBAR_WIDTH}px`;
+      sidebarRef.current.style.minWidth = `${DEFAULT_SIDEBAR_WIDTH}px`;
+      sidebarRef.current.style.maxWidth = `${DEFAULT_SIDEBAR_WIDTH}px`;
+    }
     try {
       localStorage.setItem("reef_sidebar_width", String(DEFAULT_SIDEBAR_WIDTH));
     } catch {}
   }, []);
 
   useEffect(() => {
+    if (!isDragging) return;
+
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
       const newWidth = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, e.clientX));
-      setSidebarWidth(newWidth);
+      widthRef.current = newWidth;
+
+      if (rafIdRef.current === null) {
+        rafIdRef.current = requestAnimationFrame(() => {
+          if (sidebarRef.current) {
+            sidebarRef.current.style.width = `${widthRef.current}px`;
+            sidebarRef.current.style.minWidth = `${widthRef.current}px`;
+            sidebarRef.current.style.maxWidth = `${widthRef.current}px`;
+          }
+          rafIdRef.current = null;
+        });
+      }
     };
 
     const handleMouseUp = () => {
       if (isDraggingRef.current) {
         isDraggingRef.current = false;
         setIsDragging(false);
+
+        if (rafIdRef.current !== null) {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+        }
+
+        const finalWidth = widthRef.current;
+        setSidebarWidth(finalWidth);
         try {
-          localStorage.setItem("reef_sidebar_width", String(sidebarWidth));
+          localStorage.setItem("reef_sidebar_width", String(finalWidth));
         } catch {}
       }
     };
 
-    if (isDragging) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
-    }
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    window.addEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
 
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
     };
-  }, [isDragging, sidebarWidth]);
+  }, [isDragging]);
 
   const layoutOpts = [
     { id: "Side-by-Side", label: "Side-by-Side" },
@@ -203,7 +238,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      className="app-sidebar"
+      ref={sidebarRef}
+      className={`app-sidebar ${isDragging ? "resizing" : ""}`}
       style={{
         width: `${dynamicWidth}px`,
         minWidth: `${dynamicWidth}px`,

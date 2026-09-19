@@ -585,6 +585,12 @@ html, body, #root {
   z-index: 20;
   flex-shrink: 0;
   position: relative;
+  will-change: width;
+}
+
+.app-sidebar.resizing {
+  transition: none !important;
+  user-select: none !important;
 }
 
 .app-sidebar.collapsed {
@@ -597,13 +603,23 @@ html, body, #root {
 .sidebar-resizer {
   position: absolute;
   top: 0;
-  right: -2px;
-  width: 5px;
+  right: -3px;
+  width: 6px;
   height: 100%;
   cursor: col-resize;
   background: transparent;
   transition: background 0.15s ease, box-shadow 0.15s ease;
   z-index: 35;
+  touch-action: none;
+}
+
+.sidebar-resizer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -4px;
+  width: 14px;
+  height: 100%;
 }
 
 .sidebar-resizer:hover,
@@ -1365,6 +1381,7 @@ html, body, #root {
   justify-content: center;
   user-select: none;
   background: #0f172a;
+  touch-action: none;
 }
 
 .lightbox-stage.grabbable {
@@ -1372,7 +1389,7 @@ html, body, #root {
 }
 
 .lightbox-stage.grabbing {
-  cursor: grabbing;
+  cursor: grabbing !important;
 }
 
 .lightbox-image-wrapper {
@@ -1382,6 +1399,9 @@ html, body, #root {
   align-items: center;
   justify-content: center;
   will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .lightbox-img {
@@ -1390,6 +1410,9 @@ html, body, #root {
   object-fit: contain;
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 /* Floating Coral Telemetry HUD Card */

@@ -46,21 +46,79 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
   const [scale, setScale] = useState<number>(1);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Performance refs to bypass React rendering during drag & wheel gestures
+  const scaleRef = useRef<number>(1);
+  const positionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isDraggingRef = useRef<boolean>(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; posX: number; posY: number }>({
+    startX: 0,
+    startY: 0,
+    posX: 0,
+    posY: 0,
+  });
+
+  const dragRafRef = useRef<number | null>(null);
+  const wheelRafRef = useRef<number | null>(null);
+  const hoverRafRef = useRef<number | null>(null);
 
   // Hovered coral detected by mouse position
   const [hoveredSegment, setHoveredSegment] = useState<CoralSegment | null>(null);
+  const hoveredSegmentRef = useRef<CoralSegment | null>(null);
   const [imgDims, setImgDims] = useState<{ w: number; h: number }>({ w: 1920, h: 1080 });
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
+  // Apply transforms with GPU acceleration and optional animation
+  const applyTransform = useCallback(
+    (newScale: number, newPos: { x: number; y: number }, animate: boolean = true) => {
+      scaleRef.current = newScale;
+      positionRef.current = newPos;
+      setScale(newScale);
+      setPosition(newPos);
+
+      if (wrapperRef.current) {
+        wrapperRef.current.style.transition = animate
+          ? "transform 0.18s cubic-bezier(0.2, 0, 0, 1)"
+          : "none";
+        wrapperRef.current.style.transform = `translate3d(${newPos.x}px, ${newPos.y}px, 0) scale(${newScale})`;
+      }
+    },
+    []
+  );
+
+  const handleResetZoom = useCallback(() => {
+    applyTransform(1, { x: 0, y: 0 }, true);
+  }, [applyTransform]);
+
+  const handleZoomIn = useCallback(() => {
+    const nextScale = Math.min(Number((scaleRef.current + 0.35).toFixed(2)), 5.0);
+    applyTransform(nextScale, positionRef.current, true);
+  }, [applyTransform]);
+
+  const handleZoomOut = useCallback(() => {
+    const nextScale = Math.max(Number((scaleRef.current - 0.35).toFixed(2)), 0.6);
+    const nextPos = nextScale <= 1 ? { x: 0, y: 0 } : positionRef.current;
+    applyTransform(nextScale, nextPos, true);
+  }, [applyTransform]);
+
+  // Reset modal state on open or image switch
   useEffect(() => {
     if (isOpen) {
       setActiveMode(secondarySrc && initialMode === "secondary" ? "secondary" : "primary");
+      scaleRef.current = 1;
+      positionRef.current = { x: 0, y: 0 };
       setScale(1);
       setPosition({ x: 0, y: 0 });
+      hoveredSegmentRef.current = null;
       setHoveredSegment(null);
+
+      if (wrapperRef.current) {
+        wrapperRef.current.style.transition = "none";
+        wrapperRef.current.style.transform = "translate3d(0, 0, 0) scale(1)";
+      }
 
       if (imageResolution && imageResolution.includes("x")) {
         const [rw, rh] = imageResolution.split("x").map(Number);
@@ -70,25 +128,6 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
       }
     }
   }, [isOpen, initialMode, secondarySrc, imageResolution]);
-
-  const handleResetZoom = useCallback(() => {
-    setScale(1);
-    setPosition({ x: 0, y: 0 });
-  }, []);
-
-  const handleZoomIn = useCallback(() => {
-    setScale((prev) => Math.min(Number((prev + 0.35).toFixed(2)), 5.0));
-  }, []);
-
-  const handleZoomOut = useCallback(() => {
-    setScale((prev) => {
-      const next = Math.max(Number((prev - 0.35).toFixed(2)), 0.6);
-      if (next <= 1) {
-        setPosition({ x: 0, y: 0 });
-      }
-      return next;
-    });
-  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -109,6 +148,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
       } else if (e.key === "Tab" && secondarySrc) {
         e.preventDefault();
         setActiveMode((prev) => (prev === "primary" ? "secondary" : "primary"));
+        hoveredSegmentRef.current = null;
         setHoveredSegment(null);
       }
     };
@@ -117,88 +157,240 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose, handleZoomIn, handleZoomOut, handleResetZoom, secondarySrc]);
 
-  // Wheel zoom
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  // Global mouse handlers for butter-smooth panning (zero React re-render lag)
+  useEffect(() => {
+    if (!isOpen) return;
 
-    const delta = e.deltaY < 0 ? 0.25 : -0.25;
-    setScale((prev) => {
-      const next = Math.min(Math.max(Number((prev + delta).toFixed(2)), 0.6), 5.0);
-      if (next <= 1) {
-        setPosition({ x: 0, y: 0 });
-      }
-      return next;
-    });
-  };
+    const handleWindowMouseMove = (e: MouseEvent) => {
+      if (!isDraggingRef.current) return;
 
-  // Mouse pan handlers
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0 && e.button !== 1) return;
-    setIsDragging(true);
-    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
-  };
+      const dx = e.clientX - dragStartRef.current.startX;
+      const dy = e.clientY - dragStartRef.current.startY;
+      const nextX = dragStartRef.current.posX + dx;
+      const nextY = dragStartRef.current.posY + dy;
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
-      setPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      });
-    }
+      positionRef.current = { x: nextX, y: nextY };
 
-    // Dynamic coral detection under cursor (Overlay mode only)
-    if (activeMode === "secondary" && imgRef.current && segments.length > 0) {
-      const rect = imgRef.current.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
-      // Check if mouse is inside the image bounds
-      if (mouseX >= 0 && mouseX <= rect.width && mouseY >= 0 && mouseY <= rect.height) {
-        // Map cursor position to original image coordinates
-        const scaleX = imgDims.w / rect.width;
-        const scaleY = imgDims.h / rect.height;
-        const origX = mouseX * scaleX;
-        const origY = mouseY * scaleY;
-
-        // Find matching coral by bbox or centroid proximity
-        let matchedSeg: CoralSegment | null = null;
-        let minDistance = 50; // max pixel threshold for proximity match
-
-        for (const seg of segments) {
-          if (seg.bbox) {
-            const [bx, by, bw, bh] = seg.bbox;
-            if (origX >= bx && origX <= bx + bw && origY >= by && origY <= by + bh) {
-              matchedSeg = seg;
-              break;
-            }
-          } else if (seg.centroid) {
-            const [cx, cy] = seg.centroid;
-            const dist = Math.hypot(origX - cx, origY - cy);
-            if (dist < minDistance) {
-              minDistance = dist;
-              matchedSeg = seg;
-            }
+      if (dragRafRef.current === null) {
+        dragRafRef.current = requestAnimationFrame(() => {
+          if (wrapperRef.current) {
+            wrapperRef.current.style.transform = `translate3d(${positionRef.current.x}px, ${positionRef.current.y}px, 0) scale(${scaleRef.current})`;
+            wrapperRef.current.style.transition = "none";
           }
+          dragRafRef.current = null;
+        });
+      }
+    };
+
+    const handleWindowMouseUp = () => {
+      if (isDraggingRef.current) {
+        isDraggingRef.current = false;
+        setIsDragging(false);
+
+        if (dragRafRef.current !== null) {
+          cancelAnimationFrame(dragRafRef.current);
+          dragRafRef.current = null;
         }
 
-        setHoveredSegment(matchedSeg);
-      } else {
-        setHoveredSegment(null);
+        // Synchronize React state on drag completion
+        setPosition({ ...positionRef.current });
       }
+    };
+
+    window.addEventListener("mousemove", handleWindowMouseMove, { passive: true });
+    window.addEventListener("mouseup", handleWindowMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleWindowMouseMove);
+      window.removeEventListener("mouseup", handleWindowMouseUp);
+      if (dragRafRef.current !== null) {
+        cancelAnimationFrame(dragRafRef.current);
+        dragRafRef.current = null;
+      }
+    };
+  }, [isOpen]);
+
+  // Smooth wheel & trackpad pinch zoom with cursor anchoring
+  useEffect(() => {
+    const stage = containerRef.current;
+    if (!stage || !isOpen) return;
+
+    const handleWheelNative = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Proportional factor: smooth on trackpads, responsive on scroll wheels
+      let factor = 1;
+      if (e.ctrlKey) {
+        // macOS pinch gesture
+        factor = Math.exp(-e.deltaY * 0.015);
+      } else if (Math.abs(e.deltaY) < 40) {
+        // macOS trackpad smooth scroll
+        factor = Math.exp(-e.deltaY * 0.0035);
+      } else {
+        // Discrete mouse wheel notch
+        factor = e.deltaY < 0 ? 1.22 : 0.82;
+      }
+
+      const currentScale = scaleRef.current;
+      const nextScale = Math.min(Math.max(Number((currentScale * factor).toFixed(3)), 0.5), 6.0);
+
+      if (Math.abs(nextScale - currentScale) < 0.001) return;
+
+      // Anchor zoom relative to cursor position inside the stage
+      const rect = stage.getBoundingClientRect();
+      const cursorX = e.clientX - (rect.left + rect.width / 2);
+      const cursorY = e.clientY - (rect.top + rect.height / 2);
+
+      const ratio = nextScale / currentScale;
+      let nextX = cursorX - (cursorX - positionRef.current.x) * ratio;
+      let nextY = cursorY - (cursorY - positionRef.current.y) * ratio;
+
+      if (nextScale <= 1) {
+        nextX = 0;
+        nextY = 0;
+      }
+
+      scaleRef.current = nextScale;
+      positionRef.current = { x: nextX, y: nextY };
+
+      // Direct GPU transform update for instant 60/120fps feedback
+      if (wrapperRef.current) {
+        wrapperRef.current.style.transform = `translate3d(${nextX}px, ${nextY}px, 0) scale(${nextScale})`;
+        wrapperRef.current.style.transition = "none";
+      }
+
+      // Batch React UI state synchronization
+      if (wheelRafRef.current !== null) {
+        cancelAnimationFrame(wheelRafRef.current);
+      }
+      wheelRafRef.current = requestAnimationFrame(() => {
+        setScale(nextScale);
+        setPosition({ x: nextX, y: nextY });
+        wheelRafRef.current = null;
+      });
+    };
+
+    stage.addEventListener("wheel", handleWheelNative, { passive: false });
+    return () => {
+      stage.removeEventListener("wheel", handleWheelNative);
+      if (wheelRafRef.current !== null) {
+        cancelAnimationFrame(wheelRafRef.current);
+        wheelRafRef.current = null;
+      }
+    };
+  }, [isOpen]);
+
+  // Stage Mouse Down to begin panning
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0 && e.button !== 1) return;
+    e.preventDefault();
+
+    isDraggingRef.current = true;
+    setIsDragging(true);
+
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      posX: positionRef.current.x,
+      posY: positionRef.current.y,
+    };
+
+    // Hide coral telemetry while panning
+    if (hoveredSegmentRef.current) {
+      hoveredSegmentRef.current = null;
+      setHoveredSegment(null);
     }
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
+  // Throttled coral detection under cursor (Zero layout thrashing)
+  const handleStageMouseMove = (e: React.MouseEvent) => {
+    if (isDraggingRef.current) return;
+    if (activeMode !== "secondary" || !imgRef.current || segments.length === 0) {
+      if (hoveredSegmentRef.current !== null) {
+        hoveredSegmentRef.current = null;
+        setHoveredSegment(null);
+      }
+      return;
+    }
+
+    const mouseX = e.clientX;
+    const mouseY = e.clientY;
+
+    if (hoverRafRef.current === null) {
+      hoverRafRef.current = requestAnimationFrame(() => {
+        hoverRafRef.current = null;
+        if (isDraggingRef.current || !imgRef.current) return;
+
+        const rect = imgRef.current.getBoundingClientRect();
+        const relX = mouseX - rect.left;
+        const relY = mouseY - rect.top;
+
+        if (
+          relX >= 0 &&
+          relX <= rect.width &&
+          relY >= 0 &&
+          relY <= rect.height &&
+          rect.width > 0 &&
+          rect.height > 0
+        ) {
+          const scaleX = imgDims.w / rect.width;
+          const scaleY = imgDims.h / rect.height;
+          const origX = relX * scaleX;
+          const origY = relY * scaleY;
+
+          let matchedSeg: CoralSegment | null = null;
+          let minDistance = 50;
+
+          for (let i = 0; i < segments.length; i++) {
+            const seg = segments[i];
+            if (seg.bbox) {
+              const [bx, by, bw, bh] = seg.bbox;
+              if (origX >= bx && origX <= bx + bw && origY >= by && origY <= by + bh) {
+                matchedSeg = seg;
+                break;
+              }
+            } else if (seg.centroid) {
+              const [cx, cy] = seg.centroid;
+              const dist = Math.hypot(origX - cx, origY - cy);
+              if (dist < minDistance) {
+                minDistance = dist;
+                matchedSeg = seg;
+              }
+            }
+          }
+
+          if (hoveredSegmentRef.current?.id !== matchedSeg?.id) {
+            hoveredSegmentRef.current = matchedSeg;
+            setHoveredSegment(matchedSeg);
+          }
+        } else {
+          if (hoveredSegmentRef.current !== null) {
+            hoveredSegmentRef.current = null;
+            setHoveredSegment(null);
+          }
+        }
+      });
+    }
+  };
+
+  const handleStageMouseLeave = () => {
+    if (hoveredSegmentRef.current !== null) {
+      hoveredSegmentRef.current = null;
+      setHoveredSegment(null);
+    }
+    if (hoverRafRef.current !== null) {
+      cancelAnimationFrame(hoverRafRef.current);
+      hoverRafRef.current = null;
+    }
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (scale > 1.2) {
+    if (scaleRef.current > 1.2) {
       handleResetZoom();
     } else {
-      setScale(2.5);
+      applyTransform(2.5, positionRef.current, true);
     }
   };
 
@@ -220,16 +412,8 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
     activeMode === "secondary" ? secondaryBadge : primaryBadge;
 
   return (
-    <div
-      className="lightbox-backdrop"
-      onClick={onClose}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-    >
-      <div
-        className="lightbox-modal"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="lightbox-backdrop" onClick={onClose}>
+      <div className="lightbox-modal" onClick={(e) => e.stopPropagation()}>
         {/* Clean Theme Header */}
         <header className="lightbox-header">
           <div className="lightbox-header-left">
@@ -248,6 +432,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
                 className={`lightbox-switch-btn ${activeMode === "primary" ? "active" : ""}`}
                 onClick={() => {
                   setActiveMode("primary");
+                  hoveredSegmentRef.current = null;
                   setHoveredSegment(null);
                 }}
               >
@@ -278,20 +463,22 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
           </div>
         </header>
 
-        {/* Clean Stage (No clutter pins or rings) */}
+        {/* Clean Stage with Zero-Lag Dragging and Anchored Zoom */}
         <div
           ref={containerRef}
           className={`lightbox-stage ${isDragging ? "grabbing" : scale > 1 ? "grabbable" : ""}`}
-          onWheel={handleWheel}
           onMouseDown={handleMouseDown}
+          onMouseMove={handleStageMouseMove}
+          onMouseLeave={handleStageMouseLeave}
           onDoubleClick={handleDoubleClick}
         >
           <div
+            ref={wrapperRef}
             className="lightbox-image-wrapper"
             style={{
-              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${scale})`,
               transformOrigin: "center center",
-              transition: isDragging ? "none" : "transform 0.08s ease-out",
+              transition: isDragging ? "none" : "transform 0.18s cubic-bezier(0.2, 0, 0, 1)",
             }}
           >
             <img
@@ -395,7 +582,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
               <button
                 type="button"
                 className="lightbox-dock-btn text-btn"
-                onClick={() => setScale(2.5)}
+                onClick={() => applyTransform(2.5, positionRef.current, true)}
                 title="Zoom to 2.5x Details"
               >
                 <Maximize2 size={13} />
