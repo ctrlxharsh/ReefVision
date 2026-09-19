@@ -1,0 +1,92 @@
+export interface DeviceInfo {
+  device: string;
+  device_type: "gpu" | "cpu";
+  mode?: "gpu" | "multithread_cpu" | "cpu";
+  mode_label?: string;
+  cuda_available: boolean;
+  dml_available: boolean;
+  gpu_available?: boolean;
+  gpu_name: string;
+  active_provider: string;
+  threads?: number;
+  cpu_count?: number;
+  preference?: string;
+  priority?: string[];
+}
+
+export interface ModelSpec {
+  filename: string;
+  name: string;
+  task: string;
+  size: string;
+  downloaded: boolean;
+  cached: boolean;
+  approx_size: number;
+  actual_size: number;
+  path?: string;
+}
+
+export interface ModelStatusResponse {
+  all_downloaded: boolean;
+  models: ModelSpec[];
+  active_device: string;
+  device_info: DeviceInfo;
+}
+
+export interface DownloadProgress {
+  is_downloading: boolean;
+  overall_pct: number;
+  current_file: string;
+  detail: string;
+  error?: string;
+}
+
+export interface SampleItem {
+  filename: string;
+  path: string;
+  size_bytes: number;
+}
+
+export interface CoralSegment {
+  id: number;
+  id_str: string;
+  genus: string;
+  growth_form: string;
+  taxon_conf: number;
+  condition: "Healthy" | "Bleached";
+  condition_conf: number;
+  area_pct: number;
+  area_px: number;
+  predicted_iou: number;
+  color_hex: string;
+}
+
+export interface SummaryStats {
+  total_corals_detected: number;
+  coral_coverage_pct: number;
+  coral_covered_pixels: number;
+  total_image_pixels: number;
+  image_resolution: string;
+  mean_iou_confidence: number;
+  mean_stability_score: number;
+}
+
+export interface HealthSummary {
+  healthy_count: number;
+  bleached_count: number;
+  bleaching_prevalence_pct: number;
+}
+
+export interface AnalysisData {
+  summary: SummaryStats;
+  segments: CoralSegment[];
+  health_summary: HealthSummary;
+  scene_eval: Record<string, any>;
+}
+
+export interface LoadedImage {
+  name: string;
+  dataUrl: string;
+  width?: number;
+  height?: number;
+}

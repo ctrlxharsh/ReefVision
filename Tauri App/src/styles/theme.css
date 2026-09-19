@@ -1,0 +1,83 @@
+/* Andromeida Reef Vision Studio - Design Tokens */
+:root {
+  /* Brand Colors */
+  --color-navy: #0f1e4a;
+  --color-navy-dark: #0a1433;
+  --color-navy-light: #162e66;
+  --color-teal: #0d7c85;
+  --color-teal-hover: #0e8687;
+  --color-teal-light: #f0fdfa;
+  --color-teal-border: #ccfbf1;
+  
+  /* Status Accents */
+  --color-success: #059669;
+  --color-success-bg: #ecfdf5;
+  --color-success-border: #a7f3d0;
+  --color-warning: #b45309;
+  --color-warning-bg: #fffbeb;
+  --color-warning-border: #fde68a;
+  --color-danger: #e11d48;
+  --color-danger-bg: #fff1f2;
+  --color-danger-border: #fecdd3;
+  --color-info: #0284c7;
+  --color-info-bg: #eff6ff;
+  --color-info-border: #bfdbfe;
+  --color-purple: #4f46e5;
+
+  /* Surfaces & Borders */
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-border-dark: #cbd5e1;
+  
+  /* Typography */
+  --color-text: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-muted: #64748b;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+  /* Typographic Scale */
+  --text-2xs: 0.65rem;
+  --text-xs: 0.72rem;
+  --text-sm: 0.78rem;
+  --text-base: 0.85rem;
+  --text-md: 0.95rem;
+  --text-lg: 1.15rem;
+  --text-xl: 1.45rem;
+
+  /* Gradients */
+  --gradient-brand: linear-gradient(90deg, #15247b 0%, #163e80 28%, #155e84 56%, #147987 82%, #129d89 100%);
+  --gradient-primary-btn: linear-gradient(135deg, #0f1e4a 0%, #0d7c85 100%);
+  --gradient-primary-btn-hover: linear-gradient(135deg, #162e66 0%, #0e8687 100%);
+
+  /* Radii Structure: Precision Curved Scale */
+  --radius-xl: 16px;       /* Outer cards / Dialogs / Modals */
+  --radius-lg: 12px;       /* Section cards, expanders, canvas wrappers, metric cards, tables */
+  --radius-md: 8px;        /* Dropdowns, select triggers, inputs, buttons, popovers */
+  --radius-sm: 6px;        /* Inner chips, pagination numbers, sub-options */
+  --radius-xs: 4px;        /* Micro badges, progress bars */
+  --radius-pill: 9999px;   /* Pills, status badges, sliders, round chips */
+
+  /* Semantic Aliases */
+  --radius-card: var(--radius-xl);
+  --radius-subcard: var(--radius-lg);
+  --radius-control: var(--radius-md);
+  --radius-btn: var(--radius-md);
+  --radius-badge: var(--radius-xs);
+
+  /* Shadows */
+  --shadow-card: 0 8px 24px -4px rgba(15, 30, 74, 0.05), 0 2px 5px -1px rgba(15, 30, 74, 0.03);
+  --shadow-subtle: 0 1px 3px rgba(15, 30, 74, 0.04);
+  --shadow-hover: 0 3px 8px rgba(15, 30, 74, 0.08);
+
+  /* Transitions */
+  --transition-fast: 0.15s ease-in-out;
+  --transition-normal: 0.22s ease-in-out;
+
+  /* Layout Dimensions */
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 0px;
+  --topbar-height: 46px;
+}
