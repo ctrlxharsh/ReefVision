@@ -6,10 +6,13 @@ import {
   RotateCcw,
   Maximize2,
   Minimize2,
-  SplitSquareVertical,
   Layers,
   Sparkles,
+  Info,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
+import { CoralSegment } from "../types";
 
 interface ImageLightboxModalProps {
   isOpen: boolean;
@@ -20,7 +23,9 @@ interface ImageLightboxModalProps {
   secondarySrc?: string | null;
   secondaryTitle?: string;
   secondaryBadge?: string;
-  initialMode?: "primary" | "secondary" | "split";
+  initialMode?: "primary" | "secondary";
+  segments?: CoralSegment[];
+  imageResolution?: string;
 }
 
 export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
@@ -32,32 +37,43 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
   secondarySrc,
   secondaryTitle = "Overlay",
   secondaryBadge = "OVERLAY",
-  initialMode = "primary",
+  initialMode = "secondary",
+  segments = [],
+  imageResolution = "0x0",
 }) => {
-  const [activeMode, setActiveMode] = useState<"primary" | "secondary" | "split">(
+  const [activeMode, setActiveMode] = useState<"primary" | "secondary">(
     secondarySrc && initialMode === "secondary" ? "secondary" : "primary"
   );
   const [scale, setScale] = useState<number>(1);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [splitPos, setSplitPos] = useState<number>(50); // percentage for split slider
-  const [isSplitting, setIsSplitting] = useState<boolean>(false);
+
+  // Coral hover state
+  const [hoveredSegment, setHoveredSegment] = useState<CoralSegment | null>(null);
+  const [imgDims, setImgDims] = useState<{ w: number; h: number }>({ w: 1920, h: 1080 });
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const splitContainerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
-  // Sync mode when modal opens with new initialMode
+  // Sync mode & reset when modal opens
   useEffect(() => {
     if (isOpen) {
       setActiveMode(secondarySrc && initialMode === "secondary" ? "secondary" : "primary");
       setScale(1);
       setPosition({ x: 0, y: 0 });
-      setSplitPos(50);
-    }
-  }, [isOpen, initialMode, secondarySrc]);
+      setHoveredSegment(null);
 
-  // Reset zoom & pan
+      // Parse resolution if available
+      if (imageResolution && imageResolution.includes("x")) {
+        const [rw, rh] = imageResolution.split("x").map(Number);
+        if (rw > 0 && rh > 0) {
+          setImgDims({ w: rw, h: rh });
+        }
+      }
+    }
+  }, [isOpen, initialMode, secondarySrc, imageResolution]);
+
   const handleResetZoom = useCallback(() => {
     setScale(1);
     setPosition({ x: 0, y: 0 });
@@ -120,7 +136,6 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
 
   // Mouse pan handlers
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Only pan if middle button or left button (not on slider or buttons)
     if (e.button !== 0 && e.button !== 1) return;
     setIsDragging(true);
     setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y });
@@ -133,17 +148,10 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
         y: e.clientY - dragStart.y,
       });
     }
-
-    if (isSplitting && splitContainerRef.current) {
-      const rect = splitContainerRef.current.getBoundingClientRect();
-      const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-      setSplitPos((x / rect.width) * 100);
-    }
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
-    setIsSplitting(false);
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
@@ -152,6 +160,14 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
       handleResetZoom();
     } else {
       setScale(2.5);
+    }
+  };
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const naturalW = e.currentTarget.naturalWidth;
+    const naturalH = e.currentTarget.naturalHeight;
+    if (naturalW > 0 && naturalH > 0) {
+      setImgDims({ w: naturalW, h: naturalH });
     }
   };
 
@@ -164,6 +180,8 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
   const currentBadge =
     activeMode === "secondary" ? secondaryBadge : primaryBadge;
 
+  const isOverlayMode = activeMode === "secondary";
+
   return (
     <div
       className="lightbox-backdrop"
@@ -175,7 +193,7 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
         className="lightbox-modal"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top Header Bar */}
+        {/* Header Bar */}
         <header className="lightbox-header">
           <div className="lightbox-header-info">
             <div className="lightbox-badge">{currentBadge}</div>
@@ -185,14 +203,17 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
             </span>
           </div>
 
-          {/* Mode Switcher (if secondary overlay exists) */}
+          {/* Simple View Switcher (Original / Overlay) */}
           {secondarySrc && (
             <div className="lightbox-mode-switch">
               <button
                 type="button"
                 className={`lightbox-switch-btn ${activeMode === "primary" ? "active" : ""}`}
-                onClick={() => setActiveMode("primary")}
-                title="View Original Reef Image"
+                onClick={() => {
+                  setActiveMode("primary");
+                  setHoveredSegment(null);
+                }}
+                title="Original Reef Image"
               >
                 <Layers size={13} />
                 <span>Original</span>
@@ -201,23 +222,10 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
                 type="button"
                 className={`lightbox-switch-btn ${activeMode === "secondary" ? "active" : ""}`}
                 onClick={() => setActiveMode("secondary")}
-                title="View Segmentation Overlay"
+                title="Segmentation Overlay"
               >
                 <Sparkles size={13} />
-                <span>Segmentation</span>
-              </button>
-              <button
-                type="button"
-                className={`lightbox-switch-btn ${activeMode === "split" ? "active" : ""}`}
-                onClick={() => {
-                  setActiveMode("split");
-                  setScale(1);
-                  setPosition({ x: 0, y: 0 });
-                }}
-                title="Compare with interactive split slider"
-              >
-                <SplitSquareVertical size={13} />
-                <span>Compare</span>
+                <span>Overlay</span>
               </button>
             </div>
           )}
@@ -241,72 +249,140 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
           onMouseDown={handleMouseDown}
           onDoubleClick={handleDoubleClick}
         >
-          {activeMode === "split" && secondarySrc ? (
-            /* Interactive Split-Screen Slider Mode */
-            <div
-              ref={splitContainerRef}
-              className="lightbox-split-container"
-              style={{
-                transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                transformOrigin: "center center",
-              }}
-            >
-              {/* Bottom Layer: Overlay Image */}
+          <div
+            className="lightbox-image-wrapper"
+            style={{
+              transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+              transformOrigin: "center center",
+              transition: isDragging ? "none" : "transform 0.08s ease-out",
+            }}
+          >
+            <div className="lightbox-img-relative-box">
               <img
-                src={secondarySrc}
-                alt="Segmentation Overlay"
-                className="lightbox-split-image"
-                draggable={false}
-              />
-              <span className="lightbox-split-label right">OVERLAY</span>
-
-              {/* Top Clipped Layer: Original Image */}
-              <div
-                className="lightbox-split-clipped"
-                style={{ clipPath: `polygon(0 0, ${splitPos}% 0, ${splitPos}% 100%, 0 100%)` }}
-              >
-                <img
-                  src={primarySrc}
-                  alt="Original Image"
-                  className="lightbox-split-image"
-                  draggable={false}
-                />
-                <span className="lightbox-split-label left">ORIGINAL</span>
-              </div>
-
-              {/* Slider Divider Handle */}
-              <div
-                className="lightbox-split-divider"
-                style={{ left: `${splitPos}%` }}
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  setIsSplitting(true);
-                }}
-              >
-                <div className="lightbox-split-handle">
-                  <div className="lightbox-split-arrows">‹ ›</div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Standard Zoom & Pan Image Mode */
-            <div
-              className="lightbox-image-wrapper"
-              style={{
-                transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                transformOrigin: "center center",
-                transition: isDragging ? "none" : "transform 0.1s ease-out",
-              }}
-            >
-              <img
+                ref={imgRef}
                 src={currentDisplaySrc}
                 alt={currentTitle}
                 className="lightbox-img"
                 draggable={false}
+                onLoad={handleImageLoad}
               />
+
+              {/* Interactive Coral Hover Hotspots (Overlay Mode Only) */}
+              {isOverlayMode &&
+                segments.map((seg) => {
+                  if (!seg.centroid || seg.centroid.length < 2) return null;
+                  const [cx, cy] = seg.centroid;
+                  const leftPct = (cx / imgDims.w) * 100;
+                  const topPct = (cy / imgDims.h) * 100;
+                  const isHovered = hoveredSegment?.id === seg.id;
+
+                  return (
+                    <div
+                      key={seg.id}
+                      className={`coral-hotspot-pin ${isHovered ? "active" : ""}`}
+                      style={{
+                        left: `${leftPct}%`,
+                        top: `${topPct}%`,
+                        borderColor: seg.color_hex || "#38bdf8",
+                      }}
+                      onMouseEnter={() => setHoveredSegment(seg)}
+                      onMouseLeave={() => setHoveredSegment(null)}
+                      title={`Hover to inspect coral #${seg.id}`}
+                    >
+                      <span className="coral-pin-label">{seg.id_str}</span>
+                    </div>
+                  );
+                })}
+
+              {/* Live Coral Telemetry Tooltip Card (Shown on Hover) */}
+              {isOverlayMode && hoveredSegment && (
+                <div
+                  className="coral-detail-tooltip-card"
+                  style={{
+                    left: `${(hoveredSegment.centroid?.[0] ?? imgDims.w / 2) / imgDims.w * 100}%`,
+                    top: `${(hoveredSegment.centroid?.[1] ?? imgDims.h / 2) / imgDims.h * 100}%`,
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="coral-tooltip-header">
+                    <div className="coral-tooltip-id-badge" style={{ backgroundColor: hoveredSegment.color_hex }}>
+                      {hoveredSegment.id_str}
+                    </div>
+                    <div className="coral-tooltip-titles">
+                      <span className="coral-tooltip-genus">{hoveredSegment.genus || "Coral"}</span>
+                      <span className="coral-tooltip-form">{hoveredSegment.growth_form || "Colony"}</span>
+                    </div>
+                  </div>
+
+                  <div className="coral-tooltip-condition-row">
+                    {hoveredSegment.condition === "Healthy" ? (
+                      <span className="coral-tooltip-badge healthy">
+                        <CheckCircle2 size={12} />
+                        <span>Healthy ({hoveredSegment.condition_conf}%)</span>
+                      </span>
+                    ) : (
+                      <span className="coral-tooltip-badge bleached">
+                        <AlertTriangle size={12} />
+                        <span>Bleached ({hoveredSegment.condition_conf}%)</span>
+                      </span>
+                    )}
+                    <span className="coral-tooltip-conf">
+                      BioCLIP: {hoveredSegment.taxon_conf}%
+                    </span>
+                  </div>
+
+                  <div className="coral-tooltip-stats-grid">
+                    <div className="coral-stat-item">
+                      <span className="stat-label">Coverage</span>
+                      <span className="stat-value">
+                        {hoveredSegment.area_pct}% ({hoveredSegment.area_px.toLocaleString()} px)
+                      </span>
+                    </div>
+                    <div className="coral-stat-item">
+                      <span className="stat-label">SAM IoU</span>
+                      <span className="stat-value">{hoveredSegment.predicted_iou}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
+
+        {/* Bottom Drawer: Detected Corals Quick Ribbon (Hoverable) */}
+        {isOverlayMode && segments.length > 0 && (
+          <div className="lightbox-corals-ribbon">
+            <div className="lightbox-corals-ribbon-title">
+              <Info size={13} />
+              <span>Corals ({segments.length}):</span>
+            </div>
+            <div className="lightbox-corals-chips-scroll">
+              {segments.map((seg) => {
+                const isHovered = hoveredSegment?.id === seg.id;
+                return (
+                  <button
+                    key={seg.id}
+                    type="button"
+                    className={`lightbox-coral-chip ${isHovered ? "active" : ""}`}
+                    onMouseEnter={() => setHoveredSegment(seg)}
+                    onMouseLeave={() => setHoveredSegment(null)}
+                    title={`Inspect ${seg.id_str}: ${seg.genus} (${seg.condition})`}
+                  >
+                    <span
+                      className="coral-chip-dot"
+                      style={{ backgroundColor: seg.color_hex || "#38bdf8" }}
+                    />
+                    <span className="coral-chip-num">{seg.id_str}</span>
+                    <span className="coral-chip-name">{seg.genus}</span>
+                    <span className={`coral-chip-status ${seg.condition.toLowerCase()}`}>
+                      {seg.condition === "Healthy" ? "H" : "B"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Floating Bottom Control Dock */}
         <footer className="lightbox-footer">
@@ -375,8 +451,8 @@ export const ImageLightboxModal: React.FC<ImageLightboxModalProps> = ({
             <span>•</span>
             <span>Drag to pan</span>
             <span>•</span>
-            <span>Double click to 2.5x</span>
-            <span>•</span>
+            {isOverlayMode && <span>Hover coral or chip to inspect</span>}
+            {isOverlayMode && <span>•</span>}
             <span>Esc to exit</span>
           </div>
         </footer>

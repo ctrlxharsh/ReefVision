@@ -141,17 +141,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }, [isDragging, sidebarWidth]);
 
   const layoutOpts = [
-    "Side-by-Side",
-    "Overlay Only",
-    "Original Only",
-    "Masks on Black",
+    { id: "Side-by-Side", label: "Side-by-Side" },
+    { id: "Overlay Only", label: "Overlay" },
+    { id: "Original Only", label: "Original" },
+    { id: "Masks on Black", label: "Masks on Black" },
   ];
 
   const colorModes = [
     { id: "instance", label: "Colony Instances" },
-    { id: "bleaching", label: "Condition Status (Healthy vs Bleached)" },
-    { id: "taxonomy", label: "Taxonomy Classification" },
-    { id: "taxonomy_condition", label: "Taxonomy + Condition Status" },
+    { id: "bleaching", label: "Health Condition" },
+    { id: "taxonomy", label: "Taxonomy" },
+    { id: "taxonomy_condition", label: "Taxonomy + Health" },
   ];
 
   const segmentSelectOptions: UISelectOption[] = [
@@ -163,18 +163,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   const deviceSelectOptions: UISelectOption[] = [
-    { value: "auto", label: "Auto (GPU -> Multi-Thread CPU -> CPU)" },
+    { value: "auto", label: "Auto (Recommended)" },
     {
       value: "gpu",
-      label: `GPU Acceleration ${deviceInfo?.gpu_available ? `(${deviceInfo.gpu_name})` : "[Unavailable]"}`,
+      label: deviceInfo?.gpu_available
+        ? `GPU (${deviceInfo.gpu_name})`
+        : "GPU [Unavailable]",
     },
     {
       value: "multithread_cpu",
-      label: `Multi-Threaded CPU Engine (${deviceInfo?.cpu_count || 4} Threads)`,
+      label: `Multi-Thread CPU (${deviceInfo?.cpu_count || 4} Threads)`,
     },
     {
       value: "cpu",
-      label: "Single-Threaded CPU Engine (1 Thread)",
+      label: "Single-Thread CPU",
     },
   ];
 
@@ -241,12 +243,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {paramsExpanded && (
             <div className="expander-body">
-              {/* Points Per Side */}
+              {/* Grid Density */}
               <div className="form-group">
                 <div className="form-label-row">
                   <div className="form-label-with-info">
-                    <span className="form-label">Points Per Side (Grid Density)</span>
-                    <InfoTooltip content="Density of input prompt points sampled across the image grid. Higher values (24–36) detect smaller coral fragments and intricate colonies, but increase processing time." />
+                    <span className="form-label">Grid Density</span>
+                    <InfoTooltip content="Density of input prompt points sampled across the image grid (points per side). Higher values (24–36) detect smaller coral fragments and intricate colonies, but increase processing time." />
                   </div>
                   <span className="form-slider-val">{pointsPerSide}</span>
                 </div>
@@ -261,11 +263,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 />
               </div>
 
-              {/* IoU Confidence Threshold */}
+              {/* IoU Threshold */}
               <div className="form-group">
                 <div className="form-label-row">
                   <div className="form-label-with-info">
-                    <span className="form-label">IoU Confidence Threshold</span>
+                    <span className="form-label">IoU Threshold</span>
                     <InfoTooltip content="Predicted Intersection-over-Union (IoU) quality cutoff. Discards masks with low model confidence to eliminate false positives." />
                   </div>
                   <span className="form-slider-val">{iouThresh.toFixed(2)}</span>
@@ -281,11 +283,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 />
               </div>
 
-              {/* Stability Score Threshold */}
+              {/* Stability Threshold */}
               <div className="form-group">
                 <div className="form-label-row">
                   <div className="form-label-with-info">
-                    <span className="form-label">Stability Score Threshold</span>
+                    <span className="form-label">Stability Threshold</span>
                     <InfoTooltip content="Filters masks with unstable boundaries across varying binarization cutoffs. Ensures coral outlines remain sharp and precise." />
                   </div>
                   <span className="form-slider-val">{stabilityThresh.toFixed(2)}</span>
@@ -301,11 +303,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 />
               </div>
 
-              {/* Minimum Mask Area (px) - Solid Stepper */}
+              {/* Min Mask Area */}
               <div className="form-group form-group-last">
                 <div className="form-label-row">
                   <div className="form-label-with-info">
-                    <span className="form-label">Minimum Mask Area (px)</span>
+                    <span className="form-label">Min Mask Area</span>
                     <InfoTooltip content="Minimum pixel count threshold for detected corals. Discards tiny noise specks and negligible debris below this size." />
                   </div>
                   <span className="form-slider-val">{minAreaPx} px</span>
@@ -365,18 +367,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {/* Layout View: Segmented Control */}
               <div className="form-group">
                 <div className="form-category-header-row">
-                  <span className="form-category-header">LAYOUT VIEW</span>
+                  <span className="form-category-header">LAYOUT</span>
                   <InfoTooltip content="Switch between dual comparison canvas, full overlay, source image only, or isolated coral masks on black background." />
                 </div>
                 <div className="segmented-control">
                   {layoutOpts.map((opt) => (
                     <button
-                      key={opt}
+                      key={opt.id}
                       type="button"
-                      className={`segmented-button ${layoutMode === opt ? "active" : ""}`}
-                      onClick={() => onLayoutModeChange(opt)}
+                      className={`segmented-button ${layoutMode === opt.id ? "active" : ""}`}
+                      onClick={() => onLayoutModeChange(opt.id)}
                     >
-                      {opt}
+                      {opt.label}
                     </button>
                   ))}
                 </div>
@@ -385,8 +387,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {/* Overlay Color Mode: Clean Radio List */}
               <div className="form-group">
                 <div className="form-category-header-row">
-                  <span className="form-category-header">OVERLAY COLOR MODE</span>
-                  <InfoTooltip content="Choose mask coloring: individual colony instances, health condition status (healthy green vs bleached red), or taxonomic genus classification." />
+                  <span className="form-category-header">COLOR MODE</span>
+                  <InfoTooltip content="Colony instances: distinct color per coral. Health condition: healthy green vs bleached red. Taxonomy: genus classification." />
                 </div>
                 <div className="radio-list">
                   {colorModes.map((m) => (
@@ -404,12 +406,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </div>
 
-              {/* Overlay Transparency (Alpha) */}
+              {/* Overlay Opacity */}
               <div className="form-group">
                 <div className="form-label-row">
                   <div className="form-label-with-info">
-                    <span className="form-label">Overlay Transparency (Alpha)</span>
-                    <InfoTooltip content="Blends the mask colors over the original underwater photograph. Lower values reveal more photographic texture; higher values emphasize segmentation coverage." />
+                    <span className="form-label">Overlay Opacity</span>
+                    <InfoTooltip content="Blends mask colors over the original underwater photograph. Lower values reveal texture; higher values emphasize segmentation." />
                   </div>
                   <span className="form-slider-val">{alpha.toFixed(2)}</span>
                 </div>
@@ -427,8 +429,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {/* Two Column Checkboxes */}
               <div className="form-group">
                 <div className="form-category-header-row">
-                  <span className="form-category-header">ANNOTATION OVERLAYS</span>
-                  <InfoTooltip content="Toggle visual annotations: sharp contour boundaries, colony centroid ID badges, and bounding boxes." />
+                  <span className="form-category-header">ANNOTATIONS</span>
+                  <InfoTooltip content="Toggle visual annotations: sharp contour borders, colony centroid ID badges, and bounding boxes." />
                 </div>
                 <div className="checkbox-columns">
                   <div className="checkbox-col">
@@ -465,7 +467,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {/* Highlight Specific Segment */}
               <div className="form-group form-group-last">
                 <div className="form-category-header-row">
-                  <span className="form-category-header">HIGHLIGHT SEGMENT</span>
+                  <span className="form-category-header">HIGHLIGHT CORAL</span>
                   <InfoTooltip content="Dim all other coral colonies to isolate and inspect a specific detected segment." />
                 </div>
                 <UISelect
@@ -510,8 +512,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
               <div className="form-group form-group-last">
                 <div className="form-category-header-row">
-                  <span className="form-category-header">DEVICE PREFERENCE</span>
-                  <InfoTooltip content="Choose compute hardware engine: NVIDIA CUDA GPU, Apple CoreML, or Multi-Threaded CPU." />
+                  <span className="form-category-header">COMPUTE DEVICE</span>
+                  <InfoTooltip content="Choose compute hardware engine: GPU acceleration or Multi-Threaded CPU." />
                 </div>
                 <UISelect
                   value={devicePreference}

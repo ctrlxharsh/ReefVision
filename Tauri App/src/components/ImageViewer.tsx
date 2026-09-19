@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Loader2, Maximize2, SplitSquareVertical, Eye } from "lucide-react";
+import { Loader2, Maximize2 } from "lucide-react";
 import { ImageLightboxModal } from "./ImageLightboxModal";
+import { CoralSegment } from "../types";
 
 interface ImageViewerProps {
   originalSrc: string;
@@ -8,6 +9,8 @@ interface ImageViewerProps {
   layoutMode: string;
   colorMode: string;
   isLoading?: boolean;
+  segments?: CoralSegment[];
+  imageResolution?: string;
 }
 
 export const ImageViewer: React.FC<ImageViewerProps> = ({
@@ -16,9 +19,11 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   layoutMode,
   colorMode,
   isLoading = false,
+  segments = [],
+  imageResolution = "0x0",
 }) => {
   const [lightboxOpen, setLightboxOpen] = useState<boolean>(false);
-  const [lightboxMode, setLightboxMode] = useState<"primary" | "secondary" | "split">("primary");
+  const [lightboxMode, setLightboxMode] = useState<"primary" | "secondary">("secondary");
 
   const getBadgeLabel = () => {
     switch (colorMode) {
@@ -33,7 +38,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
     }
   };
 
-  const openModal = (mode: "primary" | "secondary" | "split") => {
+  const openModal = (mode: "primary" | "secondary") => {
     setLightboxMode(mode);
     setLightboxOpen(true);
   };
@@ -51,7 +56,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
               className={`canvas-img ${isLoading ? "canvas-img-dimmed" : ""}`}
               onClick={() => openModal(overlaySrc ? "secondary" : "primary")}
             />
-            {/* Hover Floating Actions */}
+            {/* Clean hover-only Fullscreen button */}
             <div className="canvas-hover-overlay">
               <button
                 type="button"
@@ -60,26 +65,11 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
                   e.stopPropagation();
                   openModal(overlaySrc ? "secondary" : "primary");
                 }}
-                title="Inspect Fullscreen (Zoom & Pan enabled)"
+                title="Fullscreen (Zoom enabled)"
               >
                 <Maximize2 size={13} />
                 <span>Fullscreen</span>
               </button>
-
-              {overlaySrc && (
-                <button
-                  type="button"
-                  className="canvas-hover-btn secondary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openModal("split");
-                  }}
-                  title="Compare with split slider"
-                >
-                  <SplitSquareVertical size={13} />
-                  <span>Compare</span>
-                </button>
-              )}
             </div>
           </>
         ) : (
@@ -104,43 +94,23 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
 
   return (
     <div className="canvas-viewer-root">
+      {/* Single View: Overlay Only */}
       {layoutMode === "Overlay Only" && (
         <div className="canvas-single-wrapper">
           <div className="image-column-header">
-            <div className="image-column-header-left">
-              <span className="image-column-title">Segmentation Overlay</span>
-              <span className="image-column-header-badge">FULL CANVAS</span>
-            </div>
-            <button
-              type="button"
-              className="canvas-header-action-btn"
-              onClick={() => openModal("secondary")}
-              title="Inspect Fullscreen"
-            >
-              <Maximize2 size={12} />
-              <span>Inspect</span>
-            </button>
+            <span className="image-column-title">Segmentation Overlay</span>
+            <span className="image-column-header-badge">FULL CANVAS</span>
           </div>
           {renderOverlayContent()}
         </div>
       )}
 
+      {/* Single View: Original Only */}
       {layoutMode === "Original Only" && (
         <div className="canvas-single-wrapper">
           <div className="image-column-header">
-            <div className="image-column-header-left">
-              <span className="image-column-title">Original Image</span>
-              <span className="image-column-header-badge">SOURCE</span>
-            </div>
-            <button
-              type="button"
-              className="canvas-header-action-btn"
-              onClick={() => openModal("primary")}
-              title="Inspect Fullscreen"
-            >
-              <Maximize2 size={12} />
-              <span>Inspect</span>
-            </button>
+            <span className="image-column-title">Original Image</span>
+            <span className="image-column-header-badge">SOURCE</span>
           </div>
           <div className="canvas-img-container">
             <img
@@ -154,7 +124,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
                 type="button"
                 className="canvas-hover-btn"
                 onClick={() => openModal("primary")}
-                title="Inspect Fullscreen (Zoom & Pan enabled)"
+                title="Fullscreen (Zoom enabled)"
               >
                 <Maximize2 size={13} />
                 <span>Fullscreen</span>
@@ -164,22 +134,12 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
         </div>
       )}
 
+      {/* Single View: Masks on Black */}
       {layoutMode === "Masks on Black" && (
         <div className="canvas-single-wrapper">
           <div className="image-column-header">
-            <div className="image-column-header-left">
-              <span className="image-column-title">Isolated Coral Masks</span>
-              <span className="image-column-header-badge">MASKS</span>
-            </div>
-            <button
-              type="button"
-              className="canvas-header-action-btn"
-              onClick={() => openModal("secondary")}
-              title="Inspect Fullscreen"
-            >
-              <Maximize2 size={12} />
-              <span>Inspect</span>
-            </button>
+            <span className="image-column-title">Isolated Coral Masks</span>
+            <span className="image-column-header-badge">MASKS</span>
           </div>
           {renderOverlayContent(true)}
         </div>
@@ -193,19 +153,8 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
             {/* Left Column: Original */}
             <div className="canvas-column">
               <div className="image-column-header">
-                <div className="image-column-header-left">
-                  <span className="image-column-title">Original Image</span>
-                  <span className="image-column-header-badge">SOURCE</span>
-                </div>
-                <button
-                  type="button"
-                  className="canvas-header-action-btn"
-                  onClick={() => openModal("primary")}
-                  title="Inspect Original in Fullscreen"
-                >
-                  <Eye size={12} />
-                  <span>Inspect</span>
-                </button>
+                <span className="image-column-title">Original Image</span>
+                <span className="image-column-header-badge">SOURCE</span>
               </div>
               <div className="canvas-img-container">
                 <img
@@ -219,7 +168,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
                     type="button"
                     className="canvas-hover-btn"
                     onClick={() => openModal("primary")}
-                    title="Inspect Fullscreen (Zoom & Pan enabled)"
+                    title="Fullscreen (Zoom enabled)"
                   >
                     <Maximize2 size={13} />
                     <span>Fullscreen</span>
@@ -231,39 +180,15 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
             {/* Right Column: Overlay */}
             <div className="canvas-column">
               <div className="image-column-header">
-                <div className="image-column-header-left">
-                  <span className="image-column-title">Segmentation Overlay</span>
-                  <span className="image-column-header-badge">{getBadgeLabel()}</span>
-                </div>
-                <div className="image-column-header-right">
-                  {overlaySrc && (
-                    <button
-                      type="button"
-                      className="canvas-header-action-btn secondary"
-                      onClick={() => openModal("split")}
-                      title="Compare Original & Overlay with Slider"
-                    >
-                      <SplitSquareVertical size={12} />
-                      <span>Compare</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="canvas-header-action-btn"
-                    onClick={() => openModal("secondary")}
-                    title="Inspect Overlay in Fullscreen"
-                  >
-                    <Maximize2 size={12} />
-                    <span>Inspect</span>
-                  </button>
-                </div>
+                <span className="image-column-title">Segmentation Overlay</span>
+                <span className="image-column-header-badge">{getBadgeLabel()}</span>
               </div>
               {renderOverlayContent()}
             </div>
           </div>
         )}
 
-      {/* Lightbox Modal with Zoom, Pan, Shortcuts & Slider */}
+      {/* Fullscreen Modal with Zoom, Pan, and Coral Hover Inspection */}
       <ImageLightboxModal
         isOpen={lightboxOpen}
         onClose={() => setLightboxOpen(false)}
@@ -271,9 +196,11 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
         primaryTitle="Original Reef Imagery"
         primaryBadge="SOURCE"
         secondarySrc={overlaySrc}
-        secondaryTitle="SAM + BioCLIP Segmentation Overlay"
+        secondaryTitle="Segmentation Overlay"
         secondaryBadge={getBadgeLabel()}
         initialMode={lightboxMode}
+        segments={segments}
+        imageResolution={imageResolution}
       />
     </div>
   );

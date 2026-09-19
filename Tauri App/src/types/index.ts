@@ -59,6 +59,8 @@ export interface CoralSegment {
   area_px: number;
   predicted_iou: number;
   color_hex: string;
+  centroid?: [number, number];
+  bbox?: [number, number, number, number];
 }
 
 export interface SummaryStats {

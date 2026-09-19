@@ -1,57 +1,80 @@
 import React from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, FolderOpen, FileImage } from "lucide-react";
 
 interface PaginationBarProps {
   currentIndex: number;
   totalImages: number;
+  currentImageName: string;
   onPrev: () => void;
   onNext: () => void;
-  onSelectPage: (index: number) => void;
+  onBackToLibrary: () => void;
 }
 
 export const PaginationBar: React.FC<PaginationBarProps> = ({
   currentIndex,
   totalImages,
+  currentImageName,
   onPrev,
   onNext,
-  onSelectPage,
+  onBackToLibrary,
 }) => {
-  if (totalImages <= 1) return null;
-
   return (
-    <nav className="pagination-bar-wrapper" aria-label="Image Pagination">
-      <button
-        className="pagination-nav-btn"
-        onClick={onPrev}
-        disabled={currentIndex === 0}
-        title="Previous Image"
-      >
-        <ChevronLeft size={16} />
-        <span>Previous</span>
-      </button>
+    <nav className="gallery-nav-bar" aria-label="Image Navigation">
+      {/* Extreme Left: Back to Library & Previous Button */}
+      <div className="gallery-nav-left">
+        <button
+          type="button"
+          className="gallery-library-btn"
+          onClick={onBackToLibrary}
+          title="Return to image library"
+        >
+          <FolderOpen size={14} className="gallery-icon-library" />
+          <span>Library</span>
+        </button>
 
-      <div className="pagination-chip-list">
-        {Array.from({ length: totalImages }).map((_, i) => (
+        {totalImages > 1 && (
           <button
-            key={i}
-            className={`pagination-num-chip ${i === currentIndex ? "active" : ""}`}
-            onClick={() => onSelectPage(i)}
-            aria-current={i === currentIndex ? "page" : undefined}
+            type="button"
+            className="gallery-nav-btn prev"
+            onClick={onPrev}
+            disabled={currentIndex === 0}
+            title="Previous image (←)"
           >
-            {i + 1}
+            <ChevronLeft size={16} />
+            <span>Previous</span>
           </button>
-        ))}
+        )}
       </div>
 
-      <button
-        className="pagination-nav-btn"
-        onClick={onNext}
-        disabled={currentIndex === totalImages - 1}
-        title="Next Image"
-      >
-        <span>Next</span>
-        <ChevronRight size={16} />
-      </button>
+      {/* Center: File Name & Counter */}
+      <div className="gallery-nav-center">
+        <div className="gallery-file-pill">
+          <FileImage size={14} className="gallery-file-icon" />
+          <span className="gallery-filename" title={currentImageName}>
+            {currentImageName}
+          </span>
+          <span className="gallery-divider">•</span>
+          <span className="gallery-counter">
+            Image <strong>{currentIndex + 1}</strong> of {totalImages}
+          </span>
+        </div>
+      </div>
+
+      {/* Extreme Right: Next Button */}
+      <div className="gallery-nav-right">
+        {totalImages > 1 && (
+          <button
+            type="button"
+            className="gallery-nav-btn next"
+            onClick={onNext}
+            disabled={currentIndex === totalImages - 1}
+            title="Next image (→)"
+          >
+            <span>Next</span>
+            <ChevronRight size={16} />
+          </button>
+        )}
+      </div>
     </nav>
   );
 };

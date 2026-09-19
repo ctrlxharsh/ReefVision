@@ -96,34 +96,34 @@ def render_analysis_page(model, bioclip_bundle=None, bleaching_model=None):
         # 1. Hyperparameters (Default: 16, 0.50, 0.50, 100)
         with st.expander("Inference Parameters", icon=":material/tune:", expanded=True):
             points_per_side = st.slider(
-                "Points Per Side (Grid Density)",
+                "Grid Density",
                 min_value=8,
                 max_value=36,
                 value=16,
                 step=4,
                 key="param_points_per_side",
-                help="Higher values detect smaller coral instances but take longer to process.",
+                help="Points per side: higher values detect smaller coral instances but take longer to process.",
             )
             iou_thresh = st.slider(
-                "IoU Confidence Threshold",
+                "IoU Threshold",
                 min_value=0.20,
                 max_value=0.98,
                 value=0.50,
                 step=0.02,
                 key="param_iou_thresh",
-                help="Filters masks with model predicted quality below this cutoff.",
+                help="Predicted IoU confidence cutoff. Filters masks with quality below this threshold.",
             )
             stability_thresh = st.slider(
-                "Stability Score Threshold",
+                "Stability Threshold",
                 min_value=0.20,
                 max_value=0.99,
                 value=0.50,
                 step=0.01,
                 key="param_stability_thresh",
-                help="Filters masks with unstable boundary thresholds.",
+                help="Filters masks with unstable boundary binarization thresholds.",
             )
             min_area_px = st.number_input(
-                "Minimum Mask Area (px)",
+                "Min Mask Area (px)",
                 min_value=10,
                 max_value=50000,
                 value=100,
@@ -212,7 +212,7 @@ def render_analysis_page(model, bioclip_bundle=None, bleaching_model=None):
 
         # 3. Display & Overlay Controls
         with st.expander("Display Controls", icon=":material/palette:", expanded=True):
-            st.markdown("**Layout View**")
+            st.markdown("**Layout**")
             layout_opts = [
                 "Side-by-Side",
                 "Overlay Only",
@@ -229,23 +229,23 @@ def render_analysis_page(model, bioclip_bundle=None, bleaching_model=None):
             if not view_mode or view_mode not in layout_opts:
                 view_mode = "Side-by-Side"
 
-            st.markdown("**Overlay Color Mode**")
+            st.markdown("**Color Mode**")
             color_mode_options = [
                 "Colony Instances",
-                "Condition Status (Healthy vs Bleached)",
-                "Taxonomy Classification",
-                "Taxonomy + Condition Status",
+                "Health Condition",
+                "Taxonomy",
+                "Taxonomy + Health",
             ]
             color_mode_option = st.radio(
                 "Color Palette",
                 options=color_mode_options,
                 index=0,
                 key="ctrl_color_mode",
-                help="Colony Instances: Unique distinct color per segment. Condition Status: Emerald green for healthy, coral red for bleached. Taxonomy: Color-coded by coral genus with coral name badges. Taxonomy + Condition: Taxonomy colors with badges showing count, coral name, and health condition.",
+                help="Colony Instances: Unique color per segment. Health Condition: Emerald green (healthy) vs coral red (bleached). Taxonomy: Color-coded by coral genus. Taxonomy + Health: Taxonomy colors with health badges.",
             )
-            if "Taxonomy + Condition" in color_mode_option:
+            if "Taxonomy + Health" in color_mode_option or "Taxonomy + Condition" in color_mode_option:
                 color_mode = "taxonomy_condition"
-            elif "Condition" in color_mode_option:
+            elif "Health" in color_mode_option or "Condition" in color_mode_option:
                 color_mode = "bleaching"
             elif "Taxonomy" in color_mode_option:
                 color_mode = "taxonomy"
@@ -253,12 +253,13 @@ def render_analysis_page(model, bioclip_bundle=None, bleaching_model=None):
                 color_mode = "instance"
 
             alpha_val = st.slider(
-                "Overlay Transparency (Alpha)",
+                "Overlay Opacity",
                 min_value=0.10,
                 max_value=0.90,
                 value=0.45,
                 step=0.05,
                 key="ctrl_alpha",
+                help="Blends mask colors over original photograph.",
             )
 
             chk_c1, chk_c2 = st.columns(2)
@@ -290,7 +291,7 @@ def render_analysis_page(model, bioclip_bundle=None, bleaching_model=None):
 
             mask_options = ["All Corals"] + [_format_mask_option(m) for m in masks_info]
             selected_mask_option = st.selectbox(
-                "Highlight Specific Segment",
+                "Highlight Coral",
                 options=mask_options,
                 index=0,
                 key=f"sel_mask_{current_img_name}",

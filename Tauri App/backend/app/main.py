@@ -438,6 +438,8 @@ def enrich_image(req: EnrichRequest):
             "area_px": m.get("area_px", m.get("area", 0)),
             "predicted_iou": round(float(m["predicted_iou"]), 3),
             "color_hex": m.get("color_hex", "#00cccc"),
+            "centroid": [int(v) for v in m["centroid"]] if m.get("centroid") else None,
+            "bbox": [int(v) for v in m["bbox"]] if m.get("bbox") else None,
         })
 
     return {

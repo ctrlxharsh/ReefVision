@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { ChevronRight, FolderOpen, FileImage } from "lucide-react";
 import { Sidebar } from "../components/Sidebar";
 import { TopBar } from "../components/TopBar";
 import { PaginationBar } from "../components/PaginationBar";
@@ -262,44 +261,25 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
         {/* Main Studio Canvas & Results */}
         <main className="main-view">
           <div className="block-container">
-            {/* Unified Studio Navigation Toolbar (Breadcrumb + Pagination) */}
-            <div className="studio-nav-toolbar">
-              <nav className="image-breadcrumb" aria-label="Breadcrumb">
-                <button
-                  type="button"
-                  className="breadcrumb-crumb-btn"
-                  onClick={onBackToUpload}
-                  title="Return to image library"
-                >
-                  <FolderOpen size={13} className="breadcrumb-icon" />
-                  <span>Library</span>
-                </button>
-                <ChevronRight size={13} className="breadcrumb-separator" />
-                <span className="breadcrumb-crumb-current" title={currentImage.name}>
-                  <FileImage size={13} className="breadcrumb-icon" />
-                  <span className="breadcrumb-filename">{currentImage.name}</span>
-                </span>
-                <span className="breadcrumb-badge">
-                  Image {currentIndex + 1} of {images.length}
-                </span>
-              </nav>
+            {/* Gallery Navigation Toolbar: Extreme Left (Prev), Center (Name), Extreme Right (Next) */}
+            <PaginationBar
+              currentIndex={currentIndex}
+              totalImages={images.length}
+              currentImageName={currentImage.name}
+              onPrev={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
+              onNext={() => setCurrentIndex((prev) => Math.min(prev + 1, images.length - 1))}
+              onBackToLibrary={onBackToUpload}
+            />
 
-              <PaginationBar
-                currentIndex={currentIndex}
-                totalImages={images.length}
-                onPrev={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
-                onNext={() => setCurrentIndex((prev) => Math.min(prev + 1, images.length - 1))}
-                onSelectPage={(idx) => setCurrentIndex(idx)}
-              />
-            </div>
-
-            {/* Canvas Image Viewer */}
+            {/* Canvas Image Viewer with Hover Fullscreen & Coral Inspection */}
             <ImageViewer
               originalSrc={currentImage.dataUrl}
               overlaySrc={overlaySrc}
               layoutMode={layoutMode}
               colorMode={colorMode}
               isLoading={isLoading}
+              segments={segments}
+              imageResolution={stats.image_resolution}
             />
 
             {/* 4 KPI Summary Cards with Rich Top Color Accents */}
