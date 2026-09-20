@@ -21,8 +21,8 @@
   box-shadow: 0 10px 30px -4px rgba(15, 30, 74, 0.06), 0 2px 6px -1px rgba(15, 30, 74, 0.04);
   width: 100%;
   max-width: 1140px;
-  height: min(520px, calc(100vh - 2.5rem));
-  max-height: 520px;
+  height: min(565px, calc(100vh - 2.5rem));
+  max-height: 565px;
   display: grid;
   grid-template-columns: 350px 1fr;
   gap: 2rem;
