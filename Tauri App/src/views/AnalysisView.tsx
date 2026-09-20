@@ -300,7 +300,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
         />
 
         {/* Main Studio Canvas & Results with Natural Rhythm */}
-        <main className="flex-1 h-full overflow-y-auto min-h-0 bg-muted/20">
+        <main className="flex-1 min-w-0 h-full overflow-y-auto min-h-0 bg-muted/20">
           <div className="max-w-7xl mx-auto w-full p-6 lg:p-8 flex flex-col gap-6">
             {/* Gallery Navigation Toolbar */}
             <PaginationBar

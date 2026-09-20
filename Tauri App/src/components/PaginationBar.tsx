@@ -13,9 +13,9 @@ interface PaginationBarProps {
 
 /**
  * Truncates filename in the middle with ellipsis (e.g. imgdsas....jpg)
- * preserving the file extension and prefix.
+ * preserving the file extension and prefix when it exceeds maxLen.
  */
-export function truncateMiddle(filename: string, maxLen: number = 22): string {
+export function truncateMiddle(filename: string, maxLen: number = 48): string {
   if (!filename || filename.length <= maxLen) return filename;
 
   const extIdx = filename.lastIndexOf(".");
@@ -23,8 +23,8 @@ export function truncateMiddle(filename: string, maxLen: number = 22): string {
   const base = extIdx > 0 ? filename.slice(0, extIdx) : filename;
 
   const available = maxLen - ext.length - 3; // 3 for "..."
-  if (available <= 4) {
-    return `${base.slice(0, 4)}...${ext}`;
+  if (available <= 6) {
+    return `${base.slice(0, 6)}...${ext}`;
   }
 
   const front = Math.ceil(available / 2);
@@ -41,20 +41,20 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
   onNext,
   onSelectPage,
 }) => {
-  // Earlier pages before currentIndex
+  // Earlier pages before currentIndex: show all if under threshold, only collapse if very long
   const getLeftPages = (): (number | "ellipsis")[] => {
     if (currentIndex <= 0 || totalImages <= 1) return [];
-    if (currentIndex <= 3) {
+    if (totalImages <= 12 || currentIndex <= 5) {
       return Array.from({ length: currentIndex }, (_, i) => i);
     }
     return [0, "ellipsis", currentIndex - 2, currentIndex - 1];
   };
 
-  // Later pages after currentIndex
+  // Later pages after currentIndex: show all if under threshold, only collapse if very long
   const getRightPages = (): (number | "ellipsis")[] => {
     if (currentIndex >= totalImages - 1 || totalImages <= 1) return [];
     const remaining = totalImages - 1 - currentIndex;
-    if (remaining <= 3) {
+    if (totalImages <= 12 || remaining <= 5) {
       return Array.from({ length: remaining }, (_, i) => currentIndex + 1 + i);
     }
     return [
@@ -74,7 +74,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
       aria-label="Gallery Navigation"
     >
       {/* Left Section: Previous button and earlier pages */}
-      <div className="flex items-center gap-1.5 z-10">
+      <div className="flex items-center gap-1.5 z-10 shrink-0">
         <Button
           variant="outline"
           size="sm"
@@ -108,14 +108,14 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
         )}
       </div>
 
-      {/* Center Section: strictly centered in the toolbar with middle-truncated name */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2 px-3.5 py-1 rounded-lg bg-muted/60 border border-border/60 z-10 max-w-[45%] pointer-events-auto shadow-xs">
+      {/* Center Section: strictly centered in the toolbar with generous width */}
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 px-4 py-1.5 rounded-lg bg-muted/60 border border-border/60 z-10 max-w-[65%] pointer-events-auto shadow-xs">
         <FileImage className="size-3.5 text-primary shrink-0" />
         <span
-          className="font-mono text-xs font-medium text-foreground truncate"
+          className="font-mono text-xs font-medium text-foreground truncate max-w-[360px]"
           title={currentImageName}
         >
-          {truncateMiddle(currentImageName, 22)}
+          {truncateMiddle(currentImageName, 48)}
         </span>
         <span className="text-muted-foreground/40">•</span>
         <span className="text-xs text-muted-foreground font-medium shrink-0">
@@ -127,7 +127,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
       </div>
 
       {/* Right Section: later pages and Next button */}
-      <div className="flex items-center gap-1.5 z-10">
+      <div className="flex items-center gap-1.5 z-10 shrink-0">
         {rightPages.map((p, idx) =>
           p === "ellipsis" ? (
             <span

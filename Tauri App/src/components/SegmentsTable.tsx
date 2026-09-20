@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { ThreeDotsLoader } from "./ThreeDotsLoader";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CoralSegment, SummaryStats } from "../types";
 
 interface SegmentsTableProps {
@@ -182,30 +182,120 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
             className="font-mono text-xs bg-muted/40 text-muted-foreground border-border/80"
           >
             <span className="text-muted-foreground/60 mr-1 font-sans">Coverage:</span>
-            <span className="text-primary font-semibold">{stats.coral_coverage_pct}%</span>
-            <span className="text-muted-foreground/60 ml-1">
-              ({stats.coral_covered_pixels.toLocaleString("en-US")} px)
-            </span>
+            {isLoading ? (
+              <Skeleton className="h-3.5 w-16 inline-block align-middle ml-1" />
+            ) : (
+              <>
+                <span className="text-primary font-semibold">{stats.coral_coverage_pct}%</span>
+                <span className="text-muted-foreground/60 ml-1">
+                  ({stats.coral_covered_pixels.toLocaleString("en-US")} px)
+                </span>
+              </>
+            )}
           </Badge>
           <Badge variant="coral" className="text-xs font-medium px-2.5 py-0.5">
-            {stats.total_corals_detected} Colonies
+            {isLoading ? (
+              <Skeleton className="h-3.5 w-14 inline-block align-middle" />
+            ) : (
+              `${stats.total_corals_detected} Colonies`
+            )}
           </Badge>
         </div>
       </CardHeader>
 
       <CardContent className="p-0">
-        {isLoading && segments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
-            <Layers className="size-8 text-primary animate-pulse mb-3" />
-            <div className="text-sm font-semibold text-foreground">
-              Segmenting Corals & Classifying Taxa...
-            </div>
-            <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-              Applying SAM ViT-B prompt lattice, BioCLIP taxonomic embeddings, and YOLO condition model.
-            </p>
-            <div className="mt-4">
-              <ThreeDotsLoader size="sm" color="#0d7c85" />
-            </div>
+        {isLoading ? (
+          <div className="relative w-full overflow-auto max-h-[460px]">
+            <Table>
+              <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-xs z-10 border-b border-border">
+                <TableRow>
+                  <TableHead className="h-10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    ID
+                  </TableHead>
+                  <TableHead className="h-10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Taxon Genus
+                  </TableHead>
+                  <TableHead className="h-10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Growth Form
+                  </TableHead>
+                  <TableHead className="h-10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Taxon Conf
+                  </TableHead>
+                  <TableHead className="h-10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Condition
+                  </TableHead>
+                  <TableHead className="h-10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Condition Conf
+                  </TableHead>
+                  <TableHead className="h-10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Area (%)
+                  </TableHead>
+                  <TableHead className="h-10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Area (px)
+                  </TableHead>
+                  <TableHead className="h-10 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    IoU Confidence
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <TableRow key={idx} className="hover:bg-transparent">
+                    {/* ID */}
+                    <TableCell className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="size-2.5 rounded-full shrink-0" />
+                        <Skeleton className="h-3.5 w-12" />
+                      </div>
+                    </TableCell>
+                    {/* Taxon Genus */}
+                    <TableCell className="px-4 py-3">
+                      <Skeleton
+                        className="h-3.5"
+                        style={{ width: `${65 + (idx % 4) * 16}px` }}
+                      />
+                    </TableCell>
+                    {/* Growth Form */}
+                    <TableCell className="px-4 py-3">
+                      <Skeleton
+                        className="h-3.5"
+                        style={{ width: `${55 + ((idx + 1) % 4) * 18}px` }}
+                      />
+                    </TableCell>
+                    {/* Taxon Conf */}
+                    <TableCell className="px-4 py-3">
+                      <div className="flex items-center gap-2 min-w-[100px]">
+                        <Skeleton className="h-1.5 w-16" />
+                        <Skeleton className="h-3 w-8" />
+                      </div>
+                    </TableCell>
+                    {/* Condition */}
+                    <TableCell className="px-4 py-3">
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                    </TableCell>
+                    {/* Condition Conf */}
+                    <TableCell className="px-4 py-3">
+                      <div className="flex items-center gap-2 min-w-[100px]">
+                        <Skeleton className="h-1.5 w-16" />
+                        <Skeleton className="h-3 w-8" />
+                      </div>
+                    </TableCell>
+                    {/* Area (%) */}
+                    <TableCell className="px-4 py-3">
+                      <Skeleton className="h-3.5 w-10" />
+                    </TableCell>
+                    {/* Area (px) */}
+                    <TableCell className="px-4 py-3">
+                      <Skeleton className="h-3.5 w-14" />
+                    </TableCell>
+                    {/* IoU Confidence */}
+                    <TableCell className="px-4 py-3">
+                      <Skeleton className="h-3.5 w-12" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         ) : segments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">

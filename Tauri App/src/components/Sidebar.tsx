@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Sliders,
   Palette,
@@ -8,6 +8,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -61,6 +62,11 @@ interface SidebarProps {
   onDevicePreferenceChange: (val: string) => void;
 }
 
+const DEFAULT_SIDEBAR_WIDTH = 320;
+const MIN_SIDEBAR_WIDTH = 260;
+const MAX_SIDEBAR_WIDTH = 580;
+const STORAGE_KEY = "reefvision_sidebar_width";
+
 const LAYOUT_OPTIONS = [
   { id: "Side-by-Side", label: "Side by Side" },
   { id: "Overlay Only", label: "Overlay" },
@@ -105,6 +111,74 @@ export const Sidebar: React.FC<SidebarProps> = ({
   devicePreference,
   onDevicePreferenceChange,
 }) => {
+  const [width, setWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= MIN_SIDEBAR_WIDTH && parsed <= MAX_SIDEBAR_WIDTH) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    return DEFAULT_SIDEBAR_WIDTH;
+  });
+
+  const [isResizing, setIsResizing] = useState<boolean>(false);
+  const widthRef = useRef(width);
+  widthRef.current = width;
+
+  const startResizing = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    const startX = e.clientX;
+    const startWidth = widthRef.current;
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      const delta = moveEvent.clientX - startX;
+      const maxAllowed = Math.min(MAX_SIDEBAR_WIDTH, Math.floor(window.innerWidth * 0.55));
+      const newWidth = Math.min(Math.max(startWidth + delta, MIN_SIDEBAR_WIDTH), maxAllowed);
+      setWidth(newWidth);
+    };
+
+    const onPointerUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      try {
+        localStorage.setItem(STORAGE_KEY, String(widthRef.current));
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  }, []);
+
+  const handleResetWidth = useCallback(() => {
+    setWidth(DEFAULT_SIDEBAR_WIDTH);
+    try {
+      localStorage.setItem(STORAGE_KEY, String(DEFAULT_SIDEBAR_WIDTH));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, []);
+
   if (isCollapsed) {
     return (
       <Button
@@ -153,7 +227,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-80 shrink-0 h-full border-r border-border bg-card/60 flex flex-col select-none">
+    <aside
+      style={{ width: `${width}px` }}
+      className={cn(
+        "relative shrink-0 h-full border-r border-border bg-card/60 flex flex-col select-none",
+        isResizing ? "transition-none select-none" : "transition-[width] duration-75 ease-out"
+      )}
+    >
       {/* Header */}
       <div className="flex h-14 items-center justify-between border-b border-border px-5 shrink-0 bg-card">
         <div className="flex items-center gap-2.5 font-semibold text-xs uppercase tracking-wider text-foreground">
@@ -433,6 +513,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+      </div>
+
+      {/* Resizable drag handle on right border */}
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-valuenow={width}
+        aria-valuemin={MIN_SIDEBAR_WIDTH}
+        aria-valuemax={MAX_SIDEBAR_WIDTH}
+        aria-label="Resize Analysis Controls sidebar"
+        tabIndex={0}
+        onPointerDown={startResizing}
+        onDoubleClick={handleResetWidth}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowLeft") {
+            const next = Math.max(width - 16, MIN_SIDEBAR_WIDTH);
+            setWidth(next);
+            try {
+              localStorage.setItem(STORAGE_KEY, String(next));
+            } catch {}
+          } else if (e.key === "ArrowRight") {
+            const next = Math.min(width + 16, MAX_SIDEBAR_WIDTH);
+            setWidth(next);
+            try {
+              localStorage.setItem(STORAGE_KEY, String(next));
+            } catch {}
+          }
+        }}
+        title="Drag to resize sidebar • Double-click to reset"
+        className={cn(
+          "absolute top-0 -right-2 w-4 h-full cursor-col-resize z-40 select-none flex items-center justify-center transition-colors group focus-visible:outline-none",
+          isResizing && "bg-primary/15"
+        )}
+      >
+        <div
+          className={cn(
+            "w-[3px] h-9 rounded-full bg-border/80 group-hover:bg-primary group-hover:h-16 transition-all duration-150 shadow-2xs",
+            isResizing && "bg-primary h-full w-[3px] rounded-none opacity-100"
+          )}
+        />
       </div>
     </aside>
   );
