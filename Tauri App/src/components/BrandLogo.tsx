@@ -1,11 +1,26 @@
 import React from "react";
 import appIcon from "../assets/app_icon.png";
 
+import andromeidaLogo from "../assets/andromeida_logo.svg";
+
 interface BrandLogoProps {
   variant?: "portal" | "topbar" | "sidebar";
   /** @deprecated use variant='sidebar' instead */
   isSidebar?: boolean;
 }
+
+export const AndromeidaBadge: React.FC<{ className?: string }> = ({ className = "" }) => (
+  <div className={`inline-flex items-center gap-2 select-none ${className}`}>
+    <span className="text-[11px] font-medium tracking-wide text-slate-400">
+      Product by
+    </span>
+    <img
+      src={andromeidaLogo}
+      alt="ANDROME!DA"
+      className="h-3.5 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity"
+    />
+  </div>
+);
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   variant,
@@ -52,19 +67,16 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   }
 
   return (
-    <div className="flex flex-col select-none mb-2.5">
+    <div className="flex flex-col items-center justify-center text-center select-none mb-3 shrink-0">
       <img
         src={appIcon}
-        alt="Andromeida"
-        className="h-11 w-11 max-h-11 max-w-11 rounded-xl object-contain shadow-xs mb-2"
+        alt="Reef Vision Studio"
+        className="h-11 w-11 max-h-11 max-w-11 rounded-xl object-contain shadow-xs mb-1.5"
       />
-      <div className="text-[11px] font-bold tracking-wider text-[#0d7c85] uppercase">
-        ANDROME!DA<span className="text-[9px] align-super">™</span>
-      </div>
-      <h1 className="text-xl font-black text-[#0f1e4a] tracking-tight">
+      <h1 className="text-2xl sm:text-3xl font-black text-[#0f1e4a] tracking-tight">
         Reef Vision Studio
       </h1>
-      <p className="text-[11px] text-slate-500 mt-0.5 max-w-xs leading-snug">
+      <p className="text-xs text-slate-500 mt-0.5 max-w-md leading-relaxed">
         Autonomous multi-model coral reef instance segmentation, taxonomy, and condition assessment.
       </p>
     </div>

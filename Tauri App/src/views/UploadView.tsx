@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import JSZip from "jszip";
-import { BrandLogo } from "../components/BrandLogo";
+import { BrandLogo, AndromeidaBadge } from "../components/BrandLogo";
 import { UISelect } from "../components/UISelect";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -421,11 +421,12 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
 
   return (
     <div className="portal-container">
-      <div className="portal-card">
-        {/* Left Column: Branding & Hardware Acceleration */}
-        <div className="portal-brand-col">
-          <BrandLogo />
+      {/* Product Header Outside Box */}
+      <BrandLogo variant="portal" />
 
+      <div className="portal-card">
+        {/* Left Column: System Status & Hardware Acceleration */}
+        <div className="portal-brand-col">
           {/* System & Model Status Panel */}
           <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-2.5 shadow-xs mb-2.5">
             {/* Row 1: Vision Engine Connected */}
@@ -1055,6 +1056,11 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Bottom Right: Product by ANDROME!DA */}
+      <div className="fixed bottom-3.5 right-6 z-20 select-none bg-white/85 backdrop-blur-xs px-3 py-1 rounded-full border border-slate-200/70 shadow-xs hover:border-slate-300 transition-colors">
+        <AndromeidaBadge />
       </div>
 
       {/* Model Management Modal */}
