@@ -1,0 +1,198 @@
+/* ==========================================================================
+   9. KPI Summary Telemetry Cards
+   ========================================================================== */
+.metric-cards-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin: 1.25rem 0;
+}
+
+@media (max-width: 900px) {
+  .metric-cards-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.metric-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 2px 6px rgba(15, 30, 74, 0.03);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 18px rgba(15, 30, 74, 0.07);
+}
+
+.metric-card-1 {
+  background: linear-gradient(180deg, rgba(15, 30, 74, 0.025) 0%, #ffffff 100%);
+}
+
+.metric-card-2 {
+  background: linear-gradient(180deg, rgba(5, 150, 105, 0.03) 0%, #ffffff 100%);
+}
+
+.metric-card-3 {
+  background: linear-gradient(180deg, rgba(2, 132, 199, 0.03) 0%, #ffffff 100%);
+}
+
+.metric-card-4 {
+  background: linear-gradient(180deg, rgba(79, 70, 229, 0.03) 0%, #ffffff 100%);
+}
+
+.metric-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+.metric-card-1::before { background: linear-gradient(90deg, #0f1e4a, #0d7c85); }
+.metric-card-2::before { background: linear-gradient(90deg, #059669, #10b981); }
+.metric-card-3::before { background: linear-gradient(90deg, #0284c7, #38bdf8); }
+.metric-card-4::before { background: linear-gradient(90deg, #4f46e5, #818cf8); }
+
+.metric-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.metric-card-lbl {
+  font-size: 0.74rem;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metric-card-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.icon-corals {
+  background: rgba(15, 30, 74, 0.08);
+  color: #0f1e4a;
+}
+
+.icon-coverage {
+  background: rgba(5, 150, 105, 0.1);
+  color: #059669;
+}
+
+.icon-iou {
+  background: rgba(2, 132, 199, 0.1);
+  color: #0284c7;
+}
+
+.icon-stability {
+  background: rgba(79, 70, 229, 0.1);
+  color: #4f46e5;
+}
+
+.metric-card-val {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #0f1e4a;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 8px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+}
+
+.val-coverage {
+  color: #059669;
+}
+
+.val-iou {
+  color: #0284c7;
+}
+
+.val-stability {
+  color: #4f46e5;
+}
+
+.metric-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 20px;
+}
+
+.metric-pill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pill-corals {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.pill-quality-high {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.pill-quality-mid {
+  background: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+}
+
+.metric-progress-wrap {
+  flex: 1;
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.metric-progress-bar {
+  height: 100%;
+  background: #059669;
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.metric-subtext {
+  font-size: 0.68rem;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.metric-skeleton {
+  color: #cbd5e1;
+  animation: shimmer 1.5s infinite ease-in-out;
+}
+

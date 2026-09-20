@@ -1,0 +1,136 @@
+/* ==========================================================================
+   1. Resets, Native Desktop App Cursors & Selection Baseline
+   ========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Static text, headings, badges, and layout chrome inherit normal default arrow */
+h1, h2, h3, h4, h5, h6,
+p, span, label, td, th, div, li, strong, em, b, i,
+dl, dt, dd, nav, header, aside, section, main, article, figure, figcaption {
+  cursor: inherit;
+}
+
+/* Interactive elements: buttons, clickable controls, links, pills, tabs */
+button,
+a,
+select,
+summary,
+[role="button"],
+[role="tab"],
+[role="menuitem"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"],
+.clickable,
+.btn,
+.tab-btn,
+.sample-card,
+.dropzone-area,
+.page-pill,
+.page-arrow-btn,
+.gallery-page-chip,
+.gallery-arrow-btn,
+.sidebar-section-header,
+.expander-header,
+.segmented-pill,
+.segmented-button,
+.table-row-selectable,
+.table-row-item,
+.ui-select-trigger,
+.ui-select-item,
+.canvas-img {
+  cursor: pointer;
+}
+
+/* Disabled controls */
+button:disabled,
+button[disabled],
+input:disabled,
+select:disabled,
+textarea:disabled,
+[aria-disabled="true"],
+.disabled {
+  cursor: not-allowed !important;
+}
+
+/* Editable text fields & copyable code blocks: restore text cursor and text selection */
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="password"],
+input[type="email"],
+input[type="url"],
+input[type="tel"],
+textarea,
+[contenteditable="true"],
+.stepper-input,
+.raw-json-box,
+.selectable-text {
+  cursor: text;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Custom Sleek Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: var(--radius-pill);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+
+/* ==========================================================================
+   14. Animations
+   ========================================================================== */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+  100% { transform: translateX(250%); }
+}
+
+@keyframes shimmer {
+  0% { opacity: 0.35; }
+  50% { opacity: 0.9; }
+  100% { opacity: 0.35; }
+}

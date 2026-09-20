@@ -1,0 +1,149 @@
+/* ==========================================================================
+   2. Brand Typography & Header Elements
+   ========================================================================== */
+.andromeida-text-brand {
+  font-family: var(--font-sans);
+  font-size: 2.3rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  background: linear-gradient(90deg, #15247b 0%, #163e80 28%, #155e84 56%, #147987 82%, #129d89 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+  padding: 4px 0;
+  line-height: 1.2;
+}
+
+.andromeida-text-brand .tm {
+  font-size: 0.42em;
+  vertical-align: super;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.sidebar-brand-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 1.25rem 1rem 1rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  height: var(--topbar-height);
+  min-height: var(--topbar-height);
+  border-bottom: 1px solid var(--color-border);
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.sidebar-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-header-icon {
+  color: var(--color-teal);
+  flex-shrink: 0;
+}
+
+.sidebar-header-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-navy);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.sidebar-collapse-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.sidebar-collapse-icon-btn:hover {
+  background: var(--color-surface-subtle);
+  border-color: var(--color-border);
+  color: var(--color-navy);
+}
+
+.sidebar-floating-expand-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 45;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  color: var(--color-navy);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(15, 30, 74, 0.08);
+  transition: all var(--transition-fast);
+}
+
+.sidebar-floating-expand-btn:hover {
+  background: var(--color-surface-subtle);
+  border-color: var(--color-teal);
+  color: var(--color-teal);
+  box-shadow: 0 4px 12px rgba(15, 30, 74, 0.12);
+}
+
+.sidebar-logo-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: contain;
+  box-shadow: 0 2px 8px rgba(15, 30, 74, 0.12);
+  flex-shrink: 0;
+}
+
+.sidebar-logo-text {
+  font-family: var(--font-sans);
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  background: linear-gradient(90deg, #15247b 0%, #163e80 28%, #155e84 56%, #147987 82%, #129d89 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: block;
+  line-height: 1.15;
+}
+
+.sidebar-logo-text .tm {
+  font-size: 0.42em;
+  vertical-align: super;
+  font-weight: 700;
+  margin-left: 1px;
+}
+
+.sidebar-brand-sub {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--color-teal);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 2px;
+  line-height: 1.1;
+}
+

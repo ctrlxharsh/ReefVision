@@ -1,0 +1,351 @@
+/* ==========================================================================
+   8B. Fullscreen Lightbox & Coral Telemetry Viewer
+   ========================================================================== */
+.lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 30, 74, 0.45);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.18s ease-out;
+}
+
+.lightbox-modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  max-width: 1440px;
+  max-height: 92vh;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 48px -12px rgba(15, 30, 74, 0.22);
+  position: relative;
+}
+
+.lightbox-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--color-border);
+  z-index: 10;
+  gap: 12px;
+}
+
+.lightbox-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lightbox-badge {
+  background: #f0fdfa;
+  color: #0d7c85;
+  border: 1px solid #ccfbf1;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lightbox-title {
+  font-size: 0.90rem;
+  font-weight: 700;
+  color: var(--color-navy);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.lightbox-zoom-chip {
+  background: var(--color-surface-subtle);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.lightbox-mode-switch {
+  display: flex;
+  align-items: center;
+  background: #f1f5f9;
+  border: 1px solid var(--color-border);
+  padding: 3px;
+  border-radius: 8px;
+  gap: 2px;
+}
+
+.lightbox-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lightbox-switch-btn:hover {
+  color: var(--color-navy);
+}
+
+.lightbox-switch-btn.active {
+  background: #ffffff;
+  color: var(--color-navy);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.lightbox-header-right {
+  display: flex;
+  align-items: center;
+}
+
+.lightbox-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lightbox-close-btn:hover {
+  background: var(--color-surface-subtle);
+  border-color: var(--color-border-dark);
+  color: var(--color-navy);
+}
+
+/* Neutral Slate Stage for Visual Accuracy */
+.lightbox-stage {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  background: #0f172a;
+  touch-action: none;
+}
+
+.lightbox-stage.grabbable {
+  cursor: grab;
+}
+
+.lightbox-stage.grabbing {
+  cursor: grabbing !important;
+}
+
+.lightbox-image-wrapper {
+  max-width: 92%;
+  max-height: 86%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 76vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Floating Coral Telemetry HUD Card */
+.coral-hud-card {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 250px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 28px rgba(15, 30, 74, 0.15);
+  backdrop-filter: blur(12px);
+  z-index: 30;
+  animation: fadeIn 0.15s ease-out;
+  pointer-events: none;
+}
+
+.coral-hud-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.coral-hud-id {
+  font-size: 0.70rem;
+  font-weight: 800;
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.coral-hud-names {
+  display: flex;
+  flex-direction: column;
+}
+
+.coral-hud-genus {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--color-navy);
+  line-height: 1.15;
+}
+
+.coral-hud-form {
+  font-size: 0.68rem;
+  color: var(--color-text-muted);
+}
+
+.coral-hud-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.coral-hud-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+}
+
+.hud-label {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.hud-val {
+  color: var(--color-navy);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 9999px;
+}
+
+.hud-pill.healthy {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-border);
+}
+
+.hud-pill.bleached {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning-border);
+}
+
+/* Lightbox Clean Footer */
+.lightbox-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  background: #ffffff;
+  border-top: 1px solid var(--color-border);
+  z-index: 10;
+}
+
+.lightbox-controls-dock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  padding: 3px 8px;
+  border-radius: 9999px;
+}
+
+.lightbox-dock-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-navy);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lightbox-dock-btn:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: var(--color-border);
+  color: var(--color-teal);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.lightbox-dock-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.lightbox-dock-btn.text-btn {
+  width: auto;
+  border-radius: 9999px;
+  padding: 3px 10px;
+  gap: 5px;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.lightbox-dock-scale {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--color-navy);
+  min-width: 42px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.lightbox-dock-separator {
+  width: 1px;
+  height: 16px;
+  background: var(--color-border-dark);
+  margin: 0 4px;
+}
+
