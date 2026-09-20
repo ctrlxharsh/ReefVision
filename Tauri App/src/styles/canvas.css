@@ -23,12 +23,10 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  margin-bottom: 1.25rem;
 }
 
 .canvas-single-wrapper {
   display: block;
-  margin-bottom: 1.25rem;
 }
 
 .canvas-column {

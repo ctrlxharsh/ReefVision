@@ -197,7 +197,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
       let csvStr = "";
       try {
-        csvStr = await exportCsvData(imageName);
+        csvStr = await exportCsvData(imageName, minAreaPx);
       } catch (err) {
         console.warn("Backend CSV export error, falling back to client synthesis:", err);
         const headers = [

@@ -29,7 +29,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             <Target className="h-4 w-4" />
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 pt-0">
+        <CardContent className="space-y-3 pt-0">
           <div className="text-2xl font-bold font-mono tracking-tight text-slate-900">
             {isLoading ? (
               <ThreeDotsLoader size="sm" color="#0d7c85" />
@@ -37,16 +37,28 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               stats.total_corals_detected
             )}
           </div>
-          <div className="flex items-center">
-            {isLoading ? (
-              <span className="text-xs text-slate-400">Analyzing seabed...</span>
-            ) : stats.total_corals_detected > 0 ? (
-              <Badge variant="coral" className="text-[11px] px-2 py-0.5 font-medium">
-                {stats.total_corals_detected} Colonies Identified
-              </Badge>
-            ) : (
-              <span className="text-xs text-slate-400">0 Colonies Detected</span>
-            )}
+          <div className="space-y-1.5">
+            <div className="flex items-center">
+              {isLoading ? (
+                <span className="text-xs text-slate-400">Analyzing seabed...</span>
+              ) : stats.total_corals_detected > 0 ? (
+                <Badge variant="coral" className="text-[11px] px-2 py-0.5 font-medium">
+                  {stats.total_corals_detected} Colonies Identified
+                </Badge>
+              ) : (
+                <span className="text-xs text-slate-400">0 Colonies Detected</span>
+              )}
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono pt-0.5">
+              <span>Total pixels</span>
+              <span className="font-semibold text-slate-700">
+                {isLoading
+                  ? "—"
+                  : stats.total_image_pixels
+                  ? `${stats.total_image_pixels.toLocaleString("en-US")} px`
+                  : "—"}
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -61,7 +73,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             <Waves className="h-4 w-4" />
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 pt-0">
+        <CardContent className="space-y-3 pt-0">
           <div className="text-2xl font-bold font-mono tracking-tight text-emerald-600">
             {isLoading ? (
               <ThreeDotsLoader size="sm" color="#059669" />
@@ -97,7 +109,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             <Crosshair className="h-4 w-4" />
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 pt-0">
+        <CardContent className="space-y-3 pt-0">
           <div className="text-2xl font-bold font-mono tracking-tight text-slate-900">
             {isLoading ? (
               <ThreeDotsLoader size="sm" color="#0284c7" />
@@ -105,17 +117,22 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               stats.mean_iou_confidence.toFixed(3)
             )}
           </div>
-          <div className="flex items-center">
-            {isLoading ? (
-              <span className="text-xs text-slate-400">Evaluating fidelity...</span>
-            ) : (
-              <Badge
-                variant={stats.mean_iou_confidence >= 0.7 ? "info" : "secondary"}
-                className="text-[11px] px-2 py-0.5 font-medium"
-              >
-                {stats.mean_iou_confidence >= 0.7 ? "High Fidelity" : "Standard Precision"}
-              </Badge>
-            )}
+          <div className="space-y-1.5">
+            <Progress
+              value={isLoading ? 0 : Math.min(stats.mean_iou_confidence * 100, 100)}
+              className="h-1.5 bg-slate-100"
+              indicatorColor="bg-sky-500"
+            />
+            <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
+              <span>Fidelity rating</span>
+              <span className="font-semibold text-slate-700">
+                {isLoading
+                  ? "Evaluating..."
+                  : stats.mean_iou_confidence >= 0.7
+                  ? "High Fidelity"
+                  : "Standard Precision"}
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -130,7 +147,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             <ShieldCheck className="h-4 w-4" />
           </div>
         </CardHeader>
-        <CardContent className="space-y-2 pt-0">
+        <CardContent className="space-y-3 pt-0">
           <div className="text-2xl font-bold font-mono tracking-tight text-slate-900">
             {isLoading ? (
               <ThreeDotsLoader size="sm" color="#4f46e5" />
@@ -138,21 +155,22 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               stats.mean_stability_score.toFixed(3)
             )}
           </div>
-          <div className="flex items-center">
-            {isLoading ? (
-              <span className="text-xs text-slate-400">Validating bounds...</span>
-            ) : (
-              <Badge
-                variant={stats.mean_stability_score >= 0.8 ? "default" : "secondary"}
-                className={`text-[11px] px-2 py-0.5 font-medium ${
-                  stats.mean_stability_score >= 0.8
-                    ? "bg-indigo-50 text-indigo-700 border-indigo-200"
-                    : ""
-                }`}
-              >
-                {stats.mean_stability_score >= 0.8 ? "Reliable Mask Bounds" : "Boundary Evaluated"}
-              </Badge>
-            )}
+          <div className="space-y-1.5">
+            <Progress
+              value={isLoading ? 0 : Math.min(stats.mean_stability_score * 100, 100)}
+              className="h-1.5 bg-slate-100"
+              indicatorColor="bg-indigo-500"
+            />
+            <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
+              <span>Boundary stability</span>
+              <span className="font-semibold text-slate-700">
+                {isLoading
+                  ? "Validating..."
+                  : stats.mean_stability_score >= 0.8
+                  ? "Reliable Bounds"
+                  : "Evaluated Bounds"}
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>

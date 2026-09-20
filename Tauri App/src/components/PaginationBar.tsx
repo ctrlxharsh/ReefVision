@@ -79,7 +79,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
 
   return (
     <nav
-      className="flex items-center justify-between w-full py-1 mb-3.5 gap-3"
+      className="flex items-center justify-between w-full py-1 gap-3"
       aria-label="Image Navigation"
     >
       {/* Left: Previous Button */}
