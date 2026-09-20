@@ -67,10 +67,92 @@ fn spawn_backend(root: &PathBuf) -> Option<Child> {
     }
 }
 
+#[derive(serde::Serialize)]
+pub struct SaveResult {
+    pub success: bool,
+    pub path: Option<String>,
+    pub cancelled: bool,
+    pub error: Option<String>,
+}
+
+#[tauri::command]
+fn save_file_dialog(
+    default_name: String,
+    filter_name: String,
+    extensions: Vec<String>,
+    content: String,
+    is_base64: bool,
+) -> SaveResult {
+    let exts: Vec<&str> = extensions.iter().map(|s| s.as_str()).collect();
+    let mut dialog = rfd::FileDialog::new()
+        .set_file_name(&default_name)
+        .add_filter(&filter_name, &exts);
+
+    if let Ok(home) = std::env::var("HOME").or_else(|_| std::env::var("USERPROFILE")) {
+        let dl = PathBuf::from(home).join("Downloads");
+        if dl.exists() {
+            dialog = dialog.set_directory(&dl);
+        }
+    }
+
+    if let Some(path) = dialog.save_file() {
+        let write_res = if is_base64 {
+            use base64::Engine;
+            let clean_b64 = if let Some(idx) = content.find(',') {
+                &content[idx + 1..]
+            } else {
+                &content
+            };
+            match base64::engine::general_purpose::STANDARD.decode(clean_b64.trim()) {
+                Ok(bytes) => std::fs::write(&path, bytes),
+                Err(e) => {
+                    return SaveResult {
+                        success: false,
+                        path: None,
+                        cancelled: false,
+                        error: Some(format!("Base64 decode error: {}", e)),
+                    }
+                }
+            }
+        } else {
+            std::fs::write(&path, content.as_bytes())
+        };
+
+        match write_res {
+            Ok(_) => {
+                #[cfg(target_os = "macos")]
+                {
+                    let _ = Command::new("open").arg("-R").arg(&path).spawn();
+                }
+                SaveResult {
+                    success: true,
+                    path: Some(path.to_string_lossy().to_string()),
+                    cancelled: false,
+                    error: None,
+                }
+            }
+            Err(e) => SaveResult {
+                success: false,
+                path: None,
+                cancelled: false,
+                error: Some(format!("Failed to write file: {}", e)),
+            },
+        }
+    } else {
+        SaveResult {
+            success: false,
+            path: None,
+            cancelled: true,
+            error: None,
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .invoke_handler(tauri::generate_handler![save_file_dialog])
         .setup(|app| {
             let root = get_project_root();
             if !is_backend_running() {
