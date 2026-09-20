@@ -87,8 +87,8 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   };
 
   return (
-    <Card className="border-slate-200 bg-white shadow-xs overflow-hidden">
-      <CardHeader className="py-3.5 px-5 border-b border-slate-100 bg-slate-50/40">
+    <Card className="border-slate-200/90 bg-white shadow-xs rounded-xl overflow-hidden">
+      <CardHeader className="py-3 px-5 border-b border-slate-100 bg-slate-50/60">
         <CardTitle className="text-sm font-bold text-[#0f1e4a] flex items-center gap-2">
           <Download className="h-4 w-4 text-[#0d7c85]" />
           <span>Export & Data Inspector</span>
@@ -98,7 +98,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="p-5 space-y-4">
+      <CardContent className="p-5 flex flex-col gap-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Button
             variant="outline"
@@ -107,7 +107,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
               const data = await exportCocoJson(imageName, minAreaPx);
               return { name: `${stem}_coco.json`, filter: "COCO JSON", ext: ["json"], content: JSON.stringify(data, null, 2) };
             })}
-            className="h-10 bg-white border-slate-200 hover:text-[#0d7c85] text-xs font-semibold gap-2 shadow-xs"
+            className="h-10 bg-white border-slate-200/90 hover:bg-slate-50 hover:border-[#0d7c85]/40 hover:text-[#0d7c85] text-xs font-semibold gap-2 shadow-xs transition-colors"
           >
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" /> : <FileCode className="h-4 w-4 text-[#0d7c85]" />}
             <span>Export COCO JSON</span>
@@ -119,7 +119,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
             onClick={() => handleExport(async () => ({
               name: `${stem}_overlay.png`, filter: "PNG Image", ext: ["png"], content: overlayDataUrl!, isBase64: true
             }))}
-            className="h-10 bg-white border-slate-200 hover:text-[#0d7c85] text-xs font-semibold gap-2 shadow-xs"
+            className="h-10 bg-white border-slate-200/90 hover:bg-slate-50 hover:border-[#0d7c85]/40 hover:text-[#0d7c85] text-xs font-semibold gap-2 shadow-xs transition-colors"
           >
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" /> : <ImageIcon className="h-4 w-4 text-[#0d7c85]" />}
             <span>Export Overlay PNG</span>
@@ -132,7 +132,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
               const csv = await exportCsvData(imageName, minAreaPx);
               return { name: `${stem}_segments.csv`, filter: "CSV", ext: ["csv"], content: csv };
             })}
-            className="h-10 bg-white border-slate-200 hover:text-[#0d7c85] text-xs font-semibold gap-2 shadow-xs"
+            className="h-10 bg-white border-slate-200/90 hover:bg-slate-50 hover:border-[#0d7c85]/40 hover:text-[#0d7c85] text-xs font-semibold gap-2 shadow-xs transition-colors"
           >
             {isExporting ? <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" /> : <FileSpreadsheet className="h-4 w-4 text-[#0d7c85]" />}
             <span>Export Segments CSV</span>

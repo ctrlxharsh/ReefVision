@@ -50,8 +50,8 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
   const isDarkBg = layoutMode === "Masks on Black";
 
   const renderFrame = (title: string, badge: string, src: string | null, isDark: boolean, onOpen: () => void, isOverlay: boolean) => (
-    <Card className="overflow-hidden border-slate-200 bg-white shadow-xs flex flex-col group">
-      <CardHeader className="py-2.5 px-4 flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50">
+    <Card className="overflow-hidden border-slate-200/90 bg-white shadow-xs rounded-xl flex flex-col group transition-shadow hover:shadow-sm">
+      <CardHeader className="py-2.5 px-4 flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/60">
         <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
           <ImageIcon className="h-3.5 w-3.5 text-[#0d7c85]" />
           <span>{title}</span>
@@ -60,13 +60,13 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
           {badge}
         </Badge>
       </CardHeader>
-      <CardContent className={cn("p-0 relative flex items-center justify-center min-h-[320px] max-h-[500px] overflow-hidden", isDark ? "bg-black" : "bg-slate-950/[0.03]")}>
+      <CardContent className={cn("p-0 relative flex items-center justify-center min-h-[360px] max-h-[520px] overflow-hidden select-none", isDark ? "bg-slate-950" : "bg-slate-950/[0.03]")}>
         {src ? (
           <>
             <img
               src={src}
               alt={title}
-              className={cn("max-h-[500px] w-auto max-w-full object-contain cursor-pointer transition-opacity", isLoading ? "opacity-30" : "opacity-100")}
+              className={cn("max-h-[520px] w-auto max-w-full object-contain cursor-pointer transition-opacity duration-200", isLoading ? "opacity-30" : "opacity-100")}
               onClick={onOpen}
             />
             <Button
@@ -74,22 +74,22 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
               variant="secondary"
               size="sm"
               onClick={(e) => { e.stopPropagation(); onOpen(); }}
-              className="absolute top-3 right-3 h-7 px-2.5 text-xs font-medium gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white text-slate-700 border border-slate-200 shadow-sm"
+              className="absolute top-3 right-3 h-7 px-2.5 text-xs font-medium gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-150 bg-white/95 hover:bg-white text-slate-700 border border-slate-200/80 shadow-sm rounded-md"
               title="Fullscreen"
             >
-              <Maximize2 className="h-3.5 w-3.5" />
+              <Maximize2 className="h-3.5 w-3.5 text-[#0d7c85]" />
               <span>Fullscreen</span>
             </Button>
           </>
         ) : (
-          <div className="text-xs text-slate-400 font-medium py-16">No Imagery Available</div>
+          <div className="text-xs text-slate-400 font-medium py-20">No Imagery Available</div>
         )}
 
         {isLoading && isOverlay && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-white/80 backdrop-blur-xs text-center z-20">
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-white/85 backdrop-blur-xs text-center z-20">
             <ThreeDotsLoader size="lg" color="#0d7c85" />
-            <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-teal-50 border border-teal-200 text-[#0d7c85] font-mono text-xs font-semibold">
-              <Sparkles className="h-3 w-3" />
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-[#0d7c85] font-mono text-xs font-bold">
+              <Sparkles className="h-3.5 w-3.5" />
               <span>
                 {analysisStage === "classifying" ? "Step 2 of 3 • Taxonomy & Health" : analysisStage === "rendering" ? "Step 3 of 3 • Overlay Synthesis" : "Step 1 of 3 • Segmentation"}
               </span>

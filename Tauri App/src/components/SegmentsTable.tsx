@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ThreeDotsLoader } from "./ThreeDotsLoader";
 import { CoralSegment, SummaryStats } from "../types";
+import { cn } from "@/lib/utils";
 
 interface SegmentsTableProps {
   segments: CoralSegment[];
@@ -71,16 +72,29 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
         header: "Condition",
         cell: (info) => {
           const cond = info.getValue();
+          const isBleached = cond === "Bleached";
           return (
-            <Badge variant={cond === "Bleached" ? "destructive" : "success"} className="text-[10px] px-2 py-0 uppercase tracking-wider font-bold">
+            <span
+              className={cn(
+                "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border",
+                isBleached
+                  ? "bg-rose-50 text-rose-700 border-rose-200"
+                  : "bg-emerald-50 text-emerald-700 border-emerald-200"
+              )}
+            >
               {cond}
-            </Badge>
+            </span>
           );
         },
       }),
       columnHelper.accessor("condition_conf", {
         header: "Condition Conf",
-        cell: (info) => <ConfBar val={info.getValue()} color={info.row.original.condition === "Bleached" ? "bg-red-500" : "bg-emerald-500"} />,
+        cell: (info) => (
+          <ConfBar
+            val={info.getValue()}
+            color={info.row.original.condition === "Bleached" ? "bg-rose-500" : "bg-emerald-500"}
+          />
+        ),
       }),
       columnHelper.accessor("area_pct", {
         header: "Area (%)",
@@ -108,8 +122,8 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
   });
 
   return (
-    <Card className="border-slate-200 bg-white shadow-xs overflow-hidden">
-      <CardHeader className="py-3.5 px-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 bg-slate-50/40">
+    <Card className="border-slate-200/90 bg-white shadow-xs rounded-xl overflow-hidden">
+      <CardHeader className="py-3 px-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 bg-slate-50/60">
         <div>
           <CardTitle className="text-sm font-bold text-[#0f1e4a] flex items-center gap-2">
             <Layers className="h-4 w-4 text-[#0d7c85]" />

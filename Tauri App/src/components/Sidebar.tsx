@@ -44,10 +44,10 @@ interface SidebarProps {
 
 const LAYOUT_OPTIONS = ["Side-by-Side", "Overlay Only", "Original Only", "Masks on Black"];
 const COLOR_MODES = [
-  { id: "instance", label: "Colony Instances" },
-  { id: "bleaching", label: "Health Condition" },
-  { id: "taxonomy", label: "Taxonomy" },
-  { id: "taxonomy_condition", label: "Taxonomy + Health" },
+  { id: "instances", label: "Colony Instances", dot: "bg-[#0d7c85]" },
+  { id: "bleaching", label: "Health Condition", dot: "bg-emerald-500" },
+  { id: "taxonomy", label: "Taxonomy", dot: "bg-sky-500" },
+  { id: "taxonomy_condition", label: "Taxonomy + Health", dot: "bg-indigo-500" },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -101,9 +101,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-80 shrink-0 h-full border-r border-border bg-white flex flex-col select-none">
+    <aside className="w-80 shrink-0 h-full border-r border-slate-200 bg-slate-50/50 flex flex-col select-none">
       {/* Header */}
-      <div className="flex h-12 items-center justify-between border-b border-border px-4 shrink-0 bg-slate-50/50">
+      <div className="flex h-12 items-center justify-between border-b border-slate-200/80 px-4 shrink-0 bg-white">
         <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-[#0f1e4a]">
           <Sliders className="h-4 w-4 text-[#0d7c85]" />
           <span>Analysis Controls</span>
@@ -234,8 +234,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {COLOR_MODES.map((m) => (
                     <div key={m.id} className="flex items-center space-x-2">
                       <RadioGroupItem value={m.id} id={`color-${m.id}`} />
-                      <Label htmlFor={`color-${m.id}`} className="text-xs font-normal text-slate-700 cursor-pointer">
-                        {m.label}
+                      <Label htmlFor={`color-${m.id}`} className="text-xs font-medium text-slate-700 cursor-pointer flex items-center gap-1.5">
+                        <span className={`h-2 w-2 rounded-full ${m.dot}`} />
+                        <span>{m.label}</span>
                       </Label>
                     </div>
                   ))}
