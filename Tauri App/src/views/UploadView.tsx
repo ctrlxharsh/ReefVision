@@ -427,7 +427,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
           <BrandLogo />
 
           {/* System & Model Status Panel */}
-          <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-3 shadow-xs mb-3.5">
+          <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-2.5 shadow-xs mb-2.5">
             {/* Row 1: Vision Engine Connected */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
@@ -467,10 +467,10 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
 
             {isBackendConnected && (
               <>
-                <div className="h-px bg-slate-200/70 my-2.5" />
+                <div className="h-px bg-slate-200/70 my-2" />
 
                 {/* Row 2: Foundation Models header + Delete/Manage Button */}
-                <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center justify-between gap-2 mb-1.5">
                   <div className="flex items-center gap-1.5">
                     {allDownloaded ? (
                       <CheckCircle2 size={13} className="text-emerald-600" />
@@ -507,13 +507,13 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                 </div>
 
                 {/* Row 3: Models list with exact names requested by user */}
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-1">
                   {MODEL_GROUPS.map((group) => {
                     const ready = isGroupReady(group.id);
                     return (
                       <div
                         key={group.id}
-                        className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white border border-slate-200/70 text-xs hover:border-slate-300 transition-colors shadow-2xs"
+                        className="flex items-center justify-between px-2 py-1 rounded-lg bg-white border border-slate-200/70 text-xs hover:border-slate-300 transition-colors shadow-2xs"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           {ready ? (
@@ -571,8 +571,8 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
           </div>
 
           {/* Hardware Acceleration Subcard */}
-          <div className="rounded-xl border border-slate-200/90 bg-white p-3 shadow-xs">
-            <div className="flex items-center justify-between mb-2">
+          <div className="rounded-xl border border-slate-200/90 bg-white p-2.5 shadow-xs">
+            <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5">
                 <Cpu size={14} className="text-teal-600" />
                 <span className="text-[11px] font-bold text-[#0f1e4a] tracking-wider uppercase">
@@ -587,7 +587,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 border border-slate-100 mb-2.5">
+            <div className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-slate-50 border border-slate-100 mb-2">
               <span className="text-[11px] font-medium text-slate-500">Active Engine</span>
               <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-slate-200 text-slate-700 shadow-2xs">
                 {deviceInfo?.device_type === "gpu" || deviceInfo?.active_provider?.includes("CUDA") ? (
@@ -599,7 +599,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               </div>
             </div>
 
-            <div className="mb-2">
+            <div className="mb-1.5">
               <label className="block text-[11px] font-medium text-slate-500 mb-1">
                 Device Preference
               </label>
@@ -632,7 +632,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               />
             </div>
 
-            <div className="text-[10px] text-slate-400 leading-tight pt-1.5 border-t border-slate-100">
+            <div className="text-[10px] text-slate-400 leading-tight pt-1 border-t border-slate-100">
               {deviceInfo?.gpu_available
                 ? "Tensor operations accelerated natively via local GPU execution provider."
                 : "Parallel tensor operations accelerated across all CPU cores via ONNX Runtime."}
@@ -764,7 +764,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
           ) : (
             <div className="flex flex-col h-full overflow-hidden">
               {/* Modern Segmented Tab Bar */}
-              <div className="shrink-0 mb-3">
+              <div className="shrink-0 mb-2">
                 <div className="inline-flex p-1 rounded-xl bg-slate-100/90 border border-slate-200/80 w-fit">
                   <button
                     type="button"
@@ -804,7 +804,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               {/* Tab 1: Upload */}
               {activeTab === "upload" && (
                 <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                  <div className="shrink-0 mb-3">
+                  <div className="shrink-0 mb-2">
                     <h4 className="text-sm font-bold text-[#0f1e4a] tracking-tight">
                       Upload Coral Imagery
                     </h4>
@@ -821,7 +821,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                       onDrop={onDrop}
                       onClick={() => fileInputRef.current?.click()}
                     >
-                      <UploadCloud size={32} className="dropzone-icon text-teal-600 mb-2" />
+                      <UploadCloud size={30} className="dropzone-icon text-teal-600 mb-1.5" />
                       <div className="dropzone-text text-xs font-semibold text-slate-700">
                         Select or drag & drop coral images or a .zip archive
                       </div>
@@ -843,8 +843,8 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                     </div>
 
                     {stagedImages.length > 0 && (
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between mb-2">
+                      <div className="mt-2.5">
+                        <div className="flex items-center justify-between mb-1.5">
                           <div className="text-xs font-semibold text-emerald-700 flex items-center gap-1.5">
                             <CheckCircle2 size={13} />
                             <span>{stagedImages.length} image(s) ready for analysis</span>
@@ -858,7 +858,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-1">
                           {stagedImages.map((img, idx) => (
                             <div
                               key={idx}
@@ -882,7 +882,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                                   <X size={11} strokeWidth={2.5} />
                                 </button>
                               </div>
-                              <div className="px-2.5 py-2 bg-white flex items-center justify-between gap-1.5 border-t border-slate-100">
+                              <div className="px-2 py-1.5 bg-white flex items-center justify-between gap-1 border-t border-slate-100">
                                 <span
                                   className="text-[11px] font-medium text-slate-700 truncate"
                                   title={img.name}
@@ -901,14 +901,14 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                   </div>
 
                   {stagedImages.length > 0 && (
-                    <div className="shrink-0 pt-3 mt-auto border-t border-slate-100 bg-white">
+                    <div className="shrink-0 pt-2.5 mt-auto border-t border-slate-100 bg-white">
                       <Button
                         type="button"
-                        className="w-full h-11 text-xs font-bold tracking-wider uppercase text-white rounded-xl shadow-xs hover:shadow-md transition-all gap-2 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 active:scale-[0.99]"
+                        className="w-full h-10 text-xs font-bold tracking-wider uppercase text-white rounded-xl shadow-xs hover:shadow-md transition-all gap-2 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 active:scale-[0.99]"
                         onClick={handleLaunchUploaded}
                         disabled={isProcessingUpload || !isBackendConnected}
                       >
-                        <Rocket size={15} className={isProcessingUpload ? "animate-bounce" : ""} />
+                        <Rocket size={14} className={isProcessingUpload ? "animate-bounce" : ""} />
                         <span>
                           {isProcessingUpload
                             ? "Preparing Vision Engines..."
@@ -924,7 +924,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               {activeTab === "samples" && (
                 <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
                   {/* Single-line Toolbar Header */}
-                  <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 mb-2.5 pb-2 border-b border-slate-100">
+                  <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-100">
                     <div>
                       <h4 className="text-sm font-bold text-[#0f1e4a] tracking-tight">
                         Select from Sample Library
@@ -988,7 +988,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                         No sample images found. Please verify <code>demo_images/</code> folder.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 my-1">
                         {sampleSubset.map((s, idx) => (
                           <div
                             key={idx}
@@ -1015,7 +1015,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                             </div>
 
                             {/* Clean metadata caption bar */}
-                            <div className="px-2.5 py-2 bg-white flex items-center justify-between gap-1.5 border-t border-slate-100">
+                            <div className="px-2 py-1.5 bg-white flex items-center justify-between gap-1 border-t border-slate-100">
                               <span
                                 className="text-[11px] font-medium text-slate-700 truncate"
                                 title={s.filename}
@@ -1033,14 +1033,14 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                   </div>
 
                   {/* Fixed Bottom Launch Bar - Go Button ALWAYS visible */}
-                  <div className="shrink-0 pt-3 mt-auto border-t border-slate-100 bg-white">
+                  <div className="shrink-0 pt-2.5 mt-auto border-t border-slate-100 bg-white">
                     <Button
                       type="button"
-                      className="w-full h-11 text-xs font-bold tracking-wider uppercase text-white rounded-xl shadow-xs hover:shadow-md transition-all gap-2 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 active:scale-[0.99]"
+                      className="w-full h-10 text-xs font-bold tracking-wider uppercase text-white rounded-xl shadow-xs hover:shadow-md transition-all gap-2 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 active:scale-[0.99]"
                       onClick={handleLaunchSamples}
                       disabled={isLoadingSamples || sampleSubset.length === 0 || !isBackendConnected}
                     >
-                      <Rocket size={15} className={isLoadingSamples ? "animate-bounce" : ""} />
+                      <Rocket size={14} className={isLoadingSamples ? "animate-bounce" : ""} />
                       <span>
                         {isLoadingSamples
                           ? "Loading Sample Images..."
