@@ -15,13 +15,19 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   if (mode === "topbar") {
     return (
-      <div className="top-navbar-brand">
-        <img src={appIcon} alt="Andromeida Logo" className="topbar-brand-icon" />
-        <div className="topbar-brand-text">
-          <span className="topbar-brand-title">
-            ANDROME!DA<span className="tm">™</span>
+      <div className="flex items-center gap-2.5 select-none shrink-0">
+        <img
+          src={appIcon}
+          alt="Andromeida Logo"
+          className="h-7 w-7 max-h-7 max-w-7 rounded-lg object-contain shadow-xs shrink-0"
+        />
+        <div className="flex items-baseline gap-1.5">
+          <span className="font-extrabold text-sm tracking-tight text-[#0f1e4a]">
+            ANDROME!DA<span className="text-[10px] align-super text-[#0d7c85] ml-0.5">™</span>
           </span>
-          <span className="topbar-brand-sub">Reef Vision Studio</span>
+          <span className="text-[11px] font-semibold text-slate-500 tracking-wider uppercase">
+            Reef Vision Studio
+          </span>
         </div>
       </div>
     );
@@ -29,28 +35,38 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
   if (mode === "sidebar") {
     return (
-      <div className="sidebar-header">
-        <img src={appIcon} alt="App Icon" className="sidebar-logo-img" />
+      <div className="flex items-center gap-2 select-none px-4 py-3 border-b border-border">
+        <img
+          src={appIcon}
+          alt="App Icon"
+          className="h-6 w-6 max-h-6 max-w-6 rounded-md object-contain shrink-0"
+        />
         <div>
-          <div className="sidebar-logo-text">
-            ANDROME!DA<span className="tm">™</span>
+          <div className="text-xs font-extrabold text-[#0f1e4a]">
+            ANDROME!DA<span className="text-[9px] align-super text-[#0d7c85]">™</span>
           </div>
-          <div className="sidebar-brand-sub">Reef Vision Studio</div>
+          <div className="text-[10px] font-medium text-slate-500">Reef Vision Studio</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="portal-brand-col">
-      <img src={appIcon} alt="Andromeida" className="portal-icon" />
-      <div className="andromeida-text-brand">
-        ANDROME!DA<span className="tm">™</span>
+    <div className="flex flex-col select-none mb-4">
+      <img
+        src={appIcon}
+        alt="Andromeida"
+        className="h-14 w-14 max-h-14 max-w-14 rounded-xl object-contain shadow-sm mb-3"
+      />
+      <div className="text-xs font-bold tracking-wider text-[#0d7c85] uppercase">
+        ANDROME!DA<span className="text-[10px] align-super">™</span>
       </div>
-      <div className="login-title">Reef Vision Studio</div>
-      <div className="login-subtitle">
+      <h1 className="text-2xl font-black text-[#0f1e4a] tracking-tight mt-0.5">
+        Reef Vision Studio
+      </h1>
+      <p className="text-xs text-slate-500 mt-1 max-w-sm leading-relaxed">
         Autonomous multi-model coral reef instance segmentation, taxonomy, and condition assessment.
-      </div>
+      </p>
     </div>
   );
 };
