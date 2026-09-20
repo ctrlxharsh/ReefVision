@@ -641,9 +641,9 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
         </div>
 
         {/* Right Column: Download or Upload/Samples */}
-        <div>
+        <div className="portal-content-col">
           {loadError && (
-            <div className="locked-notice" style={{ background: "#fef2f2", borderColor: "#fecaca", color: "#dc2626", marginBottom: "1rem" }}>
+            <div className="locked-notice shrink-0" style={{ background: "#fef2f2", borderColor: "#fecaca", color: "#dc2626", marginBottom: "0.75rem" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <AlertCircle size={16} />
                 <span>{loadError}</span>
@@ -652,81 +652,85 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
           )}
 
           {!allDownloaded && isBackendConnected ? (
-            <div>
-              <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--color-navy)", marginBottom: "0.5rem" }}>
-                Foundation Models Required
-              </h3>
-              <div className="locked-notice">
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <AlertCircle size={16} />
-                  <span>Action Required: Please download foundation models to unlock imagery upload & analysis.</span>
+            <div className="flex flex-col h-full overflow-hidden">
+              <div className="shrink-0">
+                <h3 style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--color-navy)", marginBottom: "0.5rem" }}>
+                  Foundation Models Required
+                </h3>
+                <div className="locked-notice">
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <AlertCircle size={16} />
+                    <span>Action Required: Please download foundation models to unlock imagery upload & analysis.</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="models-required-list">
-                {MODEL_GROUPS.map((group) => {
-                  const ready = isGroupReady(group.id);
-                  return (
-                    <div key={group.id} className="model-item">
-                      <div className="model-item-info">
-                        <div className="model-name">{group.name}</div>
-                        <div className="model-meta">
-                          <span className="model-task">{group.task}</span>
-                          <span className="model-size-badge">{group.size}</span>
+              <div className="portal-scroll-area flex-1 min-h-0">
+                <div className="models-required-list">
+                  {MODEL_GROUPS.map((group) => {
+                    const ready = isGroupReady(group.id);
+                    return (
+                      <div key={group.id} className="model-item">
+                        <div className="model-item-info">
+                          <div className="model-name">{group.name}</div>
+                          <div className="model-meta">
+                            <span className="model-task">{group.task}</span>
+                            <span className="model-size-badge">{group.size}</span>
+                          </div>
+                        </div>
+                        <div className="model-item-actions">
+                          <span
+                            className={ready ? "model-badge-cached" : "model-badge-needed"}
+                          >
+                            {ready ? (
+                              <>
+                                <Check size={11} className="badge-icon" />
+                                <span>Downloaded</span>
+                              </>
+                            ) : (
+                              <>
+                                <DownloadCloud size={11} className="badge-icon" />
+                                <span>Download Required</span>
+                              </>
+                            )}
+                          </span>
+                          {ready ? (
+                            <button
+                              type="button"
+                              className="btn-model-action danger"
+                              onClick={() => handleDeleteModel(group.id)}
+                              disabled={downloadProgress.is_downloading || isDeletingModel === group.id}
+                              title={`Delete ${group.name}`}
+                            >
+                              <Trash2 size={12} className={isDeletingModel === group.id ? "spin" : ""} />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn-model-action primary"
+                              onClick={() => handleStartDownload(group.id)}
+                              disabled={downloadProgress.is_downloading || !!isDeletingModel}
+                              title={`Download ${group.name}`}
+                            >
+                              <DownloadCloud
+                                size={12}
+                                className={
+                                  downloadProgress.is_downloading &&
+                                  downloadProgress.current_file.includes(group.name)
+                                    ? "spin"
+                                    : ""
+                                }
+                              />
+                            </button>
+                          )}
                         </div>
                       </div>
-                      <div className="model-item-actions">
-                        <span
-                          className={ready ? "model-badge-cached" : "model-badge-needed"}
-                        >
-                          {ready ? (
-                            <>
-                              <Check size={11} className="badge-icon" />
-                              <span>Downloaded</span>
-                            </>
-                          ) : (
-                            <>
-                              <DownloadCloud size={11} className="badge-icon" />
-                              <span>Download Required</span>
-                            </>
-                          )}
-                        </span>
-                        {ready ? (
-                          <button
-                            type="button"
-                            className="btn-model-action danger"
-                            onClick={() => handleDeleteModel(group.id)}
-                            disabled={downloadProgress.is_downloading || isDeletingModel === group.id}
-                            title={`Delete ${group.name}`}
-                          >
-                            <Trash2 size={12} className={isDeletingModel === group.id ? "spin" : ""} />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn-model-action primary"
-                            onClick={() => handleStartDownload(group.id)}
-                            disabled={downloadProgress.is_downloading || !!isDeletingModel}
-                            title={`Download ${group.name}`}
-                          >
-                            <DownloadCloud
-                              size={12}
-                              className={
-                                downloadProgress.is_downloading &&
-                                downloadProgress.current_file.includes(group.name)
-                                  ? "spin"
-                                  : ""
-                              }
-                            />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
 
-              <div style={{ marginTop: "1.25rem" }}>
+              <div className="shrink-0 pt-3 mt-auto border-t border-slate-100 bg-white">
                 <button
                   className="btn btn-primary btn-block"
                   style={{ padding: "12px" }}
@@ -741,7 +745,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               </div>
 
               {downloadProgress.is_downloading && (
-                <div style={{ marginTop: "1rem" }}>
+                <div className="shrink-0 mt-2">
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", fontWeight: 600, marginBottom: 4 }}>
                     <span>{downloadProgress.current_file}</span>
                     <span>{downloadProgress.overall_pct}%</span>
@@ -758,47 +762,49 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               )}
             </div>
           ) : (
-            <div>
+            <div className="flex flex-col h-full overflow-hidden">
               {/* Modern Segmented Tab Bar */}
-              <div className="inline-flex p-1 rounded-xl bg-slate-100/90 border border-slate-200/80 mb-4 w-fit">
-                <button
-                  type="button"
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    activeTab === "upload"
-                      ? "bg-white text-slate-900 shadow-xs"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                  onClick={() => setActiveTab("upload")}
-                >
-                  <UploadCloud size={14} className={activeTab === "upload" ? "text-teal-600" : ""} />
-                  <span>Upload Images</span>
-                  {stagedImages.length > 0 && (
-                    <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-teal-100 text-teal-700 font-mono">
-                      {stagedImages.length}
+              <div className="shrink-0 mb-3">
+                <div className="inline-flex p-1 rounded-xl bg-slate-100/90 border border-slate-200/80 w-fit">
+                  <button
+                    type="button"
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      activeTab === "upload"
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                    onClick={() => setActiveTab("upload")}
+                  >
+                    <UploadCloud size={14} className={activeTab === "upload" ? "text-teal-600" : ""} />
+                    <span>Upload Images</span>
+                    {stagedImages.length > 0 && (
+                      <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-teal-100 text-teal-700 font-mono">
+                        {stagedImages.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      activeTab === "samples"
+                        ? "bg-white text-slate-900 shadow-xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                    onClick={() => setActiveTab("samples")}
+                  >
+                    <FolderHeart size={14} className={activeTab === "samples" ? "text-teal-600" : ""} />
+                    <span>Sample Library</span>
+                    <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200/70 text-slate-600 font-mono">
+                      {availableSamples.length || 24}
                     </span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    activeTab === "samples"
-                      ? "bg-white text-slate-900 shadow-xs"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                  onClick={() => setActiveTab("samples")}
-                >
-                  <FolderHeart size={14} className={activeTab === "samples" ? "text-teal-600" : ""} />
-                  <span>Sample Library</span>
-                  <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200/70 text-slate-600 font-mono">
-                    {availableSamples.length || 24}
-                  </span>
-                </button>
+                  </button>
+                </div>
               </div>
 
               {/* Tab 1: Upload */}
               {activeTab === "upload" && (
-                <div>
-                  <div className="mb-3">
+                <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                  <div className="shrink-0 mb-3">
                     <h4 className="text-sm font-bold text-[#0f1e4a] tracking-tight">
                       Upload Coral Imagery
                     </h4>
@@ -807,89 +813,95 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                     </p>
                   </div>
 
-                  <div
-                    className={`dropzone ${dragActive ? "drag-active" : ""}`}
-                    onDragOver={onDragOver}
-                    onDragLeave={onDragLeave}
-                    onDrop={onDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <UploadCloud size={32} className="dropzone-icon text-teal-600 mb-2" />
-                    <div className="dropzone-text text-xs font-semibold text-slate-700">
-                      Select or drag & drop coral images or a .zip archive
+                  <div className="portal-scroll-area flex-1 min-h-0">
+                    <div
+                      className={`dropzone ${dragActive ? "drag-active" : ""}`}
+                      onDragOver={onDragOver}
+                      onDragLeave={onDragLeave}
+                      onDrop={onDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <UploadCloud size={32} className="dropzone-icon text-teal-600 mb-2" />
+                      <div className="dropzone-text text-xs font-semibold text-slate-700">
+                        Select or drag & drop coral images or a .zip archive
+                      </div>
+                      <div className="dropzone-hint text-[11px] text-slate-400 mt-0.5">
+                        Supported formats: .jpg, .jpeg, .png, .webp, .zip
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        accept=".jpg,.jpeg,.png,.webp,.zip"
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            handleFiles(e.target.files);
+                          }
+                        }}
+                      />
                     </div>
-                    <div className="dropzone-hint text-[11px] text-slate-400 mt-0.5">
-                      Supported formats: .jpg, .jpeg, .png, .webp, .zip
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      accept=".jpg,.jpeg,.png,.webp,.zip"
-                      style={{ display: "none" }}
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files.length > 0) {
-                          handleFiles(e.target.files);
-                        }
-                      }}
-                    />
+
+                    {stagedImages.length > 0 && (
+                      <div className="mt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-xs font-semibold text-emerald-700 flex items-center gap-1.5">
+                            <CheckCircle2 size={13} />
+                            <span>{stagedImages.length} image(s) ready for analysis</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="text-[11px] font-medium text-slate-400 hover:text-red-600 transition-colors"
+                            onClick={() => setStagedImages([])}
+                          >
+                            Clear all
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-2">
+                          {stagedImages.map((img, idx) => (
+                            <div
+                              key={idx}
+                              className="group relative rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-xs hover:shadow-md hover:border-teal-500/60 transition-all duration-200 flex flex-col"
+                            >
+                              <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
+                                <img
+                                  src={img.dataUrl}
+                                  alt={img.name}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
+                                />
+                                <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-slate-900/70 backdrop-blur-md text-white font-mono text-[10px] font-semibold tracking-wider shadow-xs">
+                                  #{String(idx + 1).padStart(2, "0")}
+                                </div>
+                                <button
+                                  type="button"
+                                  className="absolute top-2 right-2 h-5 w-5 rounded-full bg-slate-900/70 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-xs"
+                                  onClick={() => setStagedImages((prev) => prev.filter((_, i) => i !== idx))}
+                                  title="Remove image"
+                                >
+                                  <X size={11} strokeWidth={2.5} />
+                                </button>
+                              </div>
+                              <div className="px-2.5 py-2 bg-white flex items-center justify-between gap-1.5 border-t border-slate-100">
+                                <span
+                                  className="text-[11px] font-medium text-slate-700 truncate"
+                                  title={img.name}
+                                >
+                                  {img.name}
+                                </span>
+                                <span className="text-[9px] font-mono uppercase text-slate-400 bg-slate-50 border border-slate-200/60 px-1 py-0.2 rounded shrink-0">
+                                  {img.name.split(".").pop() || "IMG"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {stagedImages.length > 0 && (
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs font-semibold text-emerald-700 flex items-center gap-1.5">
-                          <CheckCircle2 size={13} />
-                          <span>{stagedImages.length} image(s) ready for analysis</span>
-                        </div>
-                        <button
-                          type="button"
-                          className="text-[11px] font-medium text-slate-400 hover:text-red-600 transition-colors"
-                          onClick={() => setStagedImages([])}
-                        >
-                          Clear all
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-3">
-                        {stagedImages.slice(0, 12).map((img, idx) => (
-                          <div
-                            key={idx}
-                            className="group relative rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-xs hover:shadow-md hover:border-teal-500/60 transition-all duration-200 flex flex-col"
-                          >
-                            <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
-                              <img
-                                src={img.dataUrl}
-                                alt={img.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
-                              />
-                              <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-slate-900/70 backdrop-blur-md text-white font-mono text-[10px] font-semibold tracking-wider shadow-xs">
-                                #{String(idx + 1).padStart(2, "0")}
-                              </div>
-                              <button
-                                type="button"
-                                className="absolute top-2 right-2 h-5 w-5 rounded-full bg-slate-900/70 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-xs"
-                                onClick={() => setStagedImages((prev) => prev.filter((_, i) => i !== idx))}
-                                title="Remove image"
-                              >
-                                <X size={11} strokeWidth={2.5} />
-                              </button>
-                            </div>
-                            <div className="px-2.5 py-2 bg-white flex items-center justify-between gap-1.5 border-t border-slate-100">
-                              <span
-                                className="text-[11px] font-medium text-slate-700 truncate"
-                                title={img.name}
-                              >
-                                {img.name}
-                              </span>
-                              <span className="text-[9px] font-mono uppercase text-slate-400 bg-slate-50 border border-slate-200/60 px-1 py-0.2 rounded shrink-0">
-                                {img.name.split(".").pop() || "IMG"}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
+                    <div className="shrink-0 pt-3 mt-auto border-t border-slate-100 bg-white">
                       <Button
                         type="button"
                         className="w-full h-11 text-xs font-bold tracking-wider uppercase text-white rounded-xl shadow-xs hover:shadow-md transition-all gap-2 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 active:scale-[0.99]"
@@ -910,9 +922,9 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
 
               {/* Tab 2: Samples */}
               {activeTab === "samples" && (
-                <div>
+                <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
                   {/* Single-line Toolbar Header */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pb-2.5 border-b border-slate-100">
+                  <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 mb-2.5 pb-2 border-b border-slate-100">
                     <div>
                       <h4 className="text-sm font-bold text-[#0f1e4a] tracking-tight">
                         Select from Sample Library
@@ -941,9 +953,9 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                   </div>
 
                   {selectedPreset === "Select Specific Files" && (
-                    <div className="form-group mb-3">
+                    <div className="shrink-0 form-group mb-2">
                       <label className="form-label text-xs font-semibold text-slate-600">Choose Files</label>
-                      <div className="max-h-36 overflow-y-auto border border-slate-200 rounded-lg p-2 bg-slate-50/50 space-y-1">
+                      <div className="max-h-28 overflow-y-auto border border-slate-200 rounded-lg p-2 bg-slate-50/50 space-y-1">
                         {availableSamples.map((s) => (
                           <label key={s.filename} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer hover:bg-white p-1 rounded">
                             <input
@@ -965,80 +977,79 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                     </div>
                   )}
 
-                  {/* Thumbnail Preview Grid: 3-column symmetrical grid */}
-                  {!isBackendConnected ? (
-                    <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs">
-                      Connecting to Python Vision Engine... (Please ensure backend is started)
-                    </div>
-                  ) : sampleSubset.length === 0 ? (
-                    <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs">
-                      No sample images found. Please verify <code>demo_images/</code> folder.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-3">
-                      {sampleSubset.slice(0, selectedPreset === "First 6 Samples" ? 6 : 12).map((s, idx) => (
-                        <div
-                          key={idx}
-                          className="group relative rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-xs hover:shadow-md hover:border-teal-500/60 transition-all duration-200 flex flex-col"
-                        >
-                          <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
-                            <img
-                              src={getSampleImageUrl(s.filename)}
-                              alt={s.filename}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src =
-                                  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%23eee'/><text x='50%' y='50%' text-anchor='middle' fill='%23aaa' dy='.3em'>Image</text></svg>";
-                              }}
-                            />
-                            {/* Floating index badge top-left */}
-                            <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-slate-900/70 backdrop-blur-md text-white font-mono text-[10px] font-semibold tracking-wider shadow-xs">
-                              #{String(idx + 1).padStart(2, "0")}
+                  {/* Scrollable Imagery Container - Image Cards Grid */}
+                  <div className="portal-scroll-area flex-1 min-h-0">
+                    {!isBackendConnected ? (
+                      <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs my-4">
+                        Connecting to Python Vision Engine... (Please ensure backend is started)
+                      </div>
+                    ) : sampleSubset.length === 0 ? (
+                      <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs my-4">
+                        No sample images found. Please verify <code>demo_images/</code> folder.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-2">
+                        {sampleSubset.map((s, idx) => (
+                          <div
+                            key={idx}
+                            className="group relative rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-xs hover:shadow-md hover:border-teal-500/60 transition-all duration-200 flex flex-col"
+                          >
+                            <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
+                              <img
+                                src={getSampleImageUrl(s.filename)}
+                                alt={s.filename}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src =
+                                    "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%23eee'/><text x='50%' y='50%' text-anchor='middle' fill='%23aaa' dy='.3em'>Image</text></svg>";
+                                }}
+                              />
+                              {/* Floating index badge top-left */}
+                              <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-slate-900/70 backdrop-blur-md text-white font-mono text-[10px] font-semibold tracking-wider shadow-xs">
+                                #{String(idx + 1).padStart(2, "0")}
+                              </div>
+                              {/* Selected indicator top-right */}
+                              <div className="absolute top-2 right-2 h-5 w-5 rounded-full bg-emerald-500/90 text-white flex items-center justify-center shadow-xs">
+                                <Check size={11} strokeWidth={3} />
+                              </div>
                             </div>
-                            {/* Selected indicator top-right */}
-                            <div className="absolute top-2 right-2 h-5 w-5 rounded-full bg-emerald-500/90 text-white flex items-center justify-center shadow-xs">
-                              <Check size={11} strokeWidth={3} />
+
+                            {/* Clean metadata caption bar */}
+                            <div className="px-2.5 py-2 bg-white flex items-center justify-between gap-1.5 border-t border-slate-100">
+                              <span
+                                className="text-[11px] font-medium text-slate-700 truncate"
+                                title={s.filename}
+                              >
+                                {s.filename}
+                              </span>
+                              <span className="text-[9px] font-mono uppercase text-slate-400 bg-slate-50 border border-slate-200/60 px-1 py-0.2 rounded shrink-0">
+                                {s.filename.split(".").pop() || "PNG"}
+                              </span>
                             </div>
                           </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-                          {/* Clean metadata caption bar */}
-                          <div className="px-2.5 py-2 bg-white flex items-center justify-between gap-1.5 border-t border-slate-100">
-                            <span
-                              className="text-[11px] font-medium text-slate-700 truncate"
-                              title={s.filename}
-                            >
-                              {s.filename}
-                            </span>
-                            <span className="text-[9px] font-mono uppercase text-slate-400 bg-slate-50 border border-slate-200/60 px-1 py-0.2 rounded shrink-0">
-                              {s.filename.split(".").pop() || "PNG"}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {sampleSubset.length > 12 && selectedPreset !== "First 6 Samples" && (
-                    <div className="text-center text-[11px] text-slate-400 mb-2">
-                      Showing first 12 of {sampleSubset.length} sample images. All {sampleSubset.length} will be loaded into studio.
-                    </div>
-                  )}
-
-                  <Button
-                    type="button"
-                    className="w-full h-11 text-xs font-bold tracking-wider uppercase text-white rounded-xl shadow-xs hover:shadow-md transition-all gap-2 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 active:scale-[0.99] mt-2"
-                    onClick={handleLaunchSamples}
-                    disabled={isLoadingSamples || sampleSubset.length === 0 || !isBackendConnected}
-                  >
-                    <Rocket size={15} className={isLoadingSamples ? "animate-bounce" : ""} />
-                    <span>
-                      {isLoadingSamples
-                        ? "Loading Sample Images..."
-                        : !isBackendConnected
-                        ? "Waiting for Vision Engine..."
-                        : `Launch Reef Vision Studio (${sampleSubset.length} Samples)`}
-                    </span>
-                  </Button>
+                  {/* Fixed Bottom Launch Bar - Go Button ALWAYS visible */}
+                  <div className="shrink-0 pt-3 mt-auto border-t border-slate-100 bg-white">
+                    <Button
+                      type="button"
+                      className="w-full h-11 text-xs font-bold tracking-wider uppercase text-white rounded-xl shadow-xs hover:shadow-md transition-all gap-2 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 active:scale-[0.99]"
+                      onClick={handleLaunchSamples}
+                      disabled={isLoadingSamples || sampleSubset.length === 0 || !isBackendConnected}
+                    >
+                      <Rocket size={15} className={isLoadingSamples ? "animate-bounce" : ""} />
+                      <span>
+                        {isLoadingSamples
+                          ? "Loading Sample Images..."
+                          : !isBackendConnected
+                          ? "Waiting for Vision Engine..."
+                          : `Launch Reef Vision Studio (${sampleSubset.length} Samples)`}
+                      </span>
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
