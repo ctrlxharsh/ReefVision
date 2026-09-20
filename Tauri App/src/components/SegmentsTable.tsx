@@ -164,79 +164,69 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
   });
 
   return (
-    <Card className="shadow-xs border-slate-200/90 overflow-hidden">
+    <Card>
       {/* Card Header with Title and Metadata */}
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-5 pb-4 border-b border-slate-100 bg-white">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-lg bg-teal-50 text-[#0d7c85] flex items-center justify-center shrink-0">
-              <Layers className="h-4 w-4" />
-            </div>
-            <CardTitle className="text-sm font-bold text-[#0f1e4a]">
+          <div className="flex items-center gap-2">
+            <Layers className="h-5 w-5 text-[#0d7c85]" />
+            <CardTitle className="text-base font-semibold">
               Detected Coral Segments Breakdown
             </CardTitle>
           </div>
-          <CardDescription className="text-xs text-slate-500 mt-1 pl-9">
+          <CardDescription className="mt-1">
             Dense instance boundaries, taxonomy identification, and health status
           </CardDescription>
         </div>
 
         {/* Metadata Badges */}
-        <div className="flex flex-wrap items-center gap-2 pl-9 sm:pl-0">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 text-xs font-medium text-slate-600">
-            <span className="text-slate-400">Resolution:</span>
-            <span className="font-mono font-semibold text-slate-800">
-              {stats.image_resolution && stats.image_resolution !== "0x0"
-                ? stats.image_resolution.replace("x", " × ")
-                : "2048 × 1024"}
-            </span>
-          </div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 text-xs font-medium text-slate-600">
-            <span className="text-slate-400">Coverage:</span>
-            <span className="font-mono font-bold text-[#0d7c85]">
-              {stats.coral_coverage_pct}%
-            </span>
-            <span className="text-slate-400 text-[11px]">
-              ({stats.coral_covered_pixels.toLocaleString("en-US")} px)
-            </span>
-          </div>
-          <Badge variant="coral" className="px-2.5 py-1 text-xs font-semibold">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline" className="font-mono text-xs">
+            <span className="text-muted-foreground mr-1">Resolution:</span>
+            {stats.image_resolution && stats.image_resolution !== "0x0"
+              ? stats.image_resolution.replace("x", " × ")
+              : "2048 × 1024"}
+          </Badge>
+          <Badge variant="outline" className="font-mono text-xs">
+            <span className="text-muted-foreground mr-1">Coverage:</span>
+            <span className="text-[#0d7c85] font-semibold">{stats.coral_coverage_pct}%</span>
+            <span className="text-muted-foreground ml-1">({stats.coral_covered_pixels.toLocaleString("en-US")} px)</span>
+          </Badge>
+          <Badge variant="coral" className="text-xs">
             {stats.total_corals_detected} Instances
           </Badge>
         </div>
       </CardHeader>
 
       {/* Card Content with Table or Loading/Empty State */}
-      <CardContent className="p-0">
+      <CardContent>
         {isLoading && segments.length === 0 ? (
-          <div className="p-12 flex flex-col items-center justify-center gap-3 text-center bg-slate-50/40">
-            <div className="h-10 w-10 rounded-full bg-teal-50 flex items-center justify-center text-[#0d7c85]">
-              <Layers className="h-5 w-5 animate-pulse" />
-            </div>
-            <div className="text-sm font-bold text-[#0f1e4a]">
+          <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+            <Layers className="h-8 w-8 text-[#0d7c85] animate-pulse mb-2" />
+            <div className="text-sm font-semibold text-slate-800">
               Segmenting Corals & Classifying Taxa...
             </div>
-            <p className="text-xs text-slate-500 max-w-sm">
-              Please wait while the vision models extract mask boundaries and compute health indices.
+            <p className="text-xs mt-1 max-w-sm">
+              Please wait while vision models extract mask boundaries and compute health indices.
             </p>
-            <div className="mt-2">
-              <ThreeDotsLoader size="md" color="#0d7c85" />
+            <div className="mt-3">
+              <ThreeDotsLoader size="sm" color="#0d7c85" />
             </div>
           </div>
         ) : segments.length === 0 ? (
-          <div className="p-12 flex flex-col items-center justify-center gap-2 text-center bg-slate-50/40 text-slate-500">
-            <Search className="h-8 w-8 text-slate-400 opacity-60" />
-            <div className="text-sm font-semibold text-slate-700">No Coral Colonies Detected</div>
-            <p className="text-xs text-slate-400 max-w-md">
+          <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+            <Search className="h-8 w-8 mb-2 opacity-50" />
+            <div className="text-sm font-medium text-slate-700">No Coral Colonies Detected</div>
+            <p className="text-xs mt-1 max-w-md">
               No coral segments detected with current parameters. Try lowering the IoU or Stability threshold in the sidebar.
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto max-h-[440px] overflow-y-auto">
+          <div className="rounded-md border max-h-[440px] overflow-auto">
             <Table>
-              <TableHeader className="sticky top-0 bg-slate-50/95 backdrop-blur-xs z-10 shadow-2xs">
+              <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id} className="border-b border-slate-200">
+                  <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
                       const isSortable = header.column.getCanSort();
                       const sortDir = header.column.getIsSorted();

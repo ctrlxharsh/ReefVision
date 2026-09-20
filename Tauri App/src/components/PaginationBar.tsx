@@ -91,16 +91,15 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
           onClick={onPrev}
           disabled={currentIndex === 0}
           title="Previous image (←)"
-          className="h-8 px-3 border-slate-200 text-slate-700 hover:text-[#0d7c85] hover:border-[#0d7c85] font-semibold text-xs"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4 mr-1" />
           <span>Previous</span>
         </Button>
       </div>
 
       {/* Center: Current Image Badge */}
       <div className="flex items-center justify-center min-w-0">
-        <div className="inline-flex items-center gap-2 bg-white border border-slate-200/90 shadow-xs px-3.5 py-1.5 rounded-full text-xs max-w-full">
+        <div className="inline-flex items-center gap-2 bg-card border shadow-xs px-3.5 py-1.5 rounded-full text-xs max-w-full">
           <FileImage className="h-3.5 w-3.5 text-[#0d7c85] shrink-0" />
           <span
             className="font-mono font-semibold text-[#0f1e4a] truncate max-w-[240px]"
@@ -108,8 +107,8 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
           >
             {currentImageName}
           </span>
-          <span className="text-slate-300">•</span>
-          <span className="text-slate-500 shrink-0 font-medium">
+          <span className="text-muted-foreground">•</span>
+          <span className="text-muted-foreground shrink-0 font-medium">
             Image <strong className="text-[#0d7c85]">{currentIndex + 1}</strong> of {totalImages}
           </span>
         </div>
@@ -126,10 +125,9 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
           onClick={onNext}
           disabled={currentIndex >= totalImages - 1}
           title="Next image (→)"
-          className="h-8 px-3 border-slate-200 text-slate-700 hover:text-[#0d7c85] hover:border-[#0d7c85] font-semibold text-xs"
         >
           <span>Next</span>
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
     </nav>

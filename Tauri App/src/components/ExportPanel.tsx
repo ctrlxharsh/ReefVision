@@ -251,24 +251,22 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   };
 
   return (
-    <Card className="shadow-xs border-slate-200/90 overflow-hidden">
-      <CardHeader className="p-5 pb-4 border-b border-slate-100 bg-white">
+    <Card>
+      <CardHeader>
         <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-lg bg-teal-50 text-[#0d7c85] flex items-center justify-center shrink-0">
-            <Download className="h-4 w-4" />
-          </div>
+          <Download className="h-5 w-5 text-[#0d7c85]" />
           <div>
-            <CardTitle className="text-sm font-bold text-[#0f1e4a]">
+            <CardTitle className="text-base font-semibold">
               Export & Data Inspector
             </CardTitle>
-            <CardDescription className="text-xs text-slate-500 mt-0.5">
+            <CardDescription className="mt-0.5">
               Save COCO annotations, visual masks, and benthic data spreadsheets
             </CardDescription>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-5 space-y-4">
+      <CardContent className="space-y-4">
         {/* Export Buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Button
@@ -276,7 +274,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
             variant="outline"
             onClick={handleDownloadCoco}
             disabled={isExporting}
-            className="h-10 justify-center border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold gap-2 shadow-xs"
+            className="w-full"
           >
             {isExporting ? (
               <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
@@ -291,7 +289,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
             variant="outline"
             onClick={handleDownloadOverlay}
             disabled={isExporting || !overlayDataUrl}
-            className="h-10 justify-center border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold gap-2 shadow-xs"
+            className="w-full"
           >
             {isExporting ? (
               <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
@@ -306,7 +304,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
             variant="outline"
             onClick={handleDownloadCsv}
             disabled={isExporting || !hasSegments}
-            className="h-10 justify-center border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold gap-2 shadow-xs"
+            className="w-full"
           >
             {isExporting ? (
               <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
@@ -319,32 +317,32 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
         {/* Feedback Alert */}
         {feedbackMsg && (
-          <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3.5 py-2 text-xs font-semibold text-emerald-700 shadow-xs animate-in fade-in">
+          <div className="inline-flex items-center gap-2 rounded-md bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs font-medium text-emerald-800">
             <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
             <span>{feedbackMsg}</span>
           </div>
         )}
 
         {/* JSON Inspector Accordion */}
-        <div className="rounded-lg border border-slate-200 overflow-hidden">
+        <div className="rounded-md border overflow-hidden">
           <button
             type="button"
-            className="w-full flex items-center justify-between p-3 bg-slate-50/80 hover:bg-slate-100/70 text-left transition-colors"
+            className="w-full flex items-center justify-between p-3 bg-muted/40 hover:bg-muted/70 text-left transition-colors"
             onClick={() => setShowJson(!showJson)}
           >
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+            <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
               <FileCode className="h-4 w-4 text-[#0d7c85]" />
               <span>Raw Model Output (JSON)</span>
             </div>
             {showJson ? (
-              <ChevronDown className="h-4 w-4 text-slate-400" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-slate-400" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             )}
           </button>
           {showJson && (
-            <div className="p-4 border-t border-slate-200 bg-slate-900">
-              <pre className="text-[11px] font-mono text-slate-200 max-h-80 overflow-auto whitespace-pre-wrap leading-relaxed">
+            <div className="p-4 border-t bg-slate-950 text-slate-50 font-mono text-xs">
+              <pre className="max-h-80 overflow-auto whitespace-pre-wrap leading-relaxed">
                 {JSON.stringify(rawJsonData, null, 2)}
               </pre>
             </div>
