@@ -271,6 +271,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
         <Sidebar
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onSetCollapsed={setIsSidebarCollapsed}
           pointsPerSide={pointsPerSide}
           onPointsPerSideChange={setPointsPerSide}
           iouThresh={iouThresh}

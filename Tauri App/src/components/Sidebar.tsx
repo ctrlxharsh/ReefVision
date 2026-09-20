@@ -34,6 +34,7 @@ import { DeviceInfo, CoralSegment } from "../types";
 interface SidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onSetCollapsed?: (val: boolean) => void;
   pointsPerSide: number;
   onPointsPerSideChange: (val: number) => void;
   iouThresh: number;
@@ -63,8 +64,9 @@ interface SidebarProps {
 }
 
 const DEFAULT_SIDEBAR_WIDTH = 320;
-const MIN_SIDEBAR_WIDTH = 260;
-const MAX_SIDEBAR_WIDTH = 580;
+const MIN_SIDEBAR_WIDTH = 240;
+const COLLAPSE_THRESHOLD = 180;
+const MAX_SIDEBAR_WIDTH = 540;
 const STORAGE_KEY = "reefvision_sidebar_width";
 
 const LAYOUT_OPTIONS = [
@@ -84,6 +86,7 @@ const COLOR_MODES = [
 export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
+  onSetCollapsed,
   pointsPerSide,
   onPointsPerSideChange,
   iouThresh,
@@ -130,41 +133,118 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const widthRef = useRef(width);
   widthRef.current = width;
 
+  const lastGoodWidthRef = useRef<number>(
+    width >= MIN_SIDEBAR_WIDTH ? width : DEFAULT_SIDEBAR_WIDTH
+  );
+  if (width >= MIN_SIDEBAR_WIDTH) {
+    lastGoodWidthRef.current = width;
+  }
+
   const startResizing = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
     setIsResizing(true);
     const startX = e.clientX;
-    const startWidth = widthRef.current;
+    const startWidth = widthRef.current >= MIN_SIDEBAR_WIDTH ? widthRef.current : lastGoodWidthRef.current;
 
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
 
     const onPointerMove = (moveEvent: PointerEvent) => {
       const delta = moveEvent.clientX - startX;
-      const maxAllowed = Math.min(MAX_SIDEBAR_WIDTH, Math.floor(window.innerWidth * 0.55));
-      const newWidth = Math.min(Math.max(startWidth + delta, MIN_SIDEBAR_WIDTH), maxAllowed);
-      setWidth(newWidth);
+      const tentative = startWidth + delta;
+      const maxAllowed = Math.min(MAX_SIDEBAR_WIDTH, Math.floor(window.innerWidth * 0.45));
+
+      if (tentative < COLLAPSE_THRESHOLD) {
+        setWidth(0);
+      } else {
+        const clamped = Math.min(Math.max(tentative, MIN_SIDEBAR_WIDTH), maxAllowed);
+        setWidth(clamped);
+        lastGoodWidthRef.current = clamped;
+      }
     };
 
-    const onPointerUp = () => {
+    const onPointerUp = (upEvent: PointerEvent) => {
       setIsResizing(false);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
-      try {
-        localStorage.setItem(STORAGE_KEY, String(widthRef.current));
-      } catch {
-        // ignore
+
+      const delta = upEvent.clientX - startX;
+      const tentative = startWidth + delta;
+
+      if (tentative < COLLAPSE_THRESHOLD) {
+        if (onSetCollapsed) {
+          onSetCollapsed(true);
+        } else {
+          onToggleCollapse();
+        }
+        setWidth(lastGoodWidthRef.current);
+      } else {
+        const maxAllowed = Math.min(MAX_SIDEBAR_WIDTH, Math.floor(window.innerWidth * 0.45));
+        const finalWidth = Math.min(Math.max(tentative, MIN_SIDEBAR_WIDTH), maxAllowed);
+        setWidth(finalWidth);
+        lastGoodWidthRef.current = finalWidth;
+        try {
+          localStorage.setItem(STORAGE_KEY, String(finalWidth));
+        } catch {
+          // ignore
+        }
       }
     };
 
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
-  }, []);
+  }, [onSetCollapsed, onToggleCollapse]);
+
+  const startUncollapseDrag = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      if (moveEvent.clientX >= COLLAPSE_THRESHOLD) {
+        if (onSetCollapsed) onSetCollapsed(false);
+        else if (isCollapsed) onToggleCollapse();
+
+        const maxAllowed = Math.min(MAX_SIDEBAR_WIDTH, Math.floor(window.innerWidth * 0.45));
+        const next = Math.min(Math.max(moveEvent.clientX, MIN_SIDEBAR_WIDTH), maxAllowed);
+        setWidth(next);
+        lastGoodWidthRef.current = next;
+      }
+    };
+
+    const onPointerUp = (upEvent: PointerEvent) => {
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+
+      if (upEvent.clientX >= COLLAPSE_THRESHOLD) {
+        if (onSetCollapsed) onSetCollapsed(false);
+        else if (isCollapsed) onToggleCollapse();
+
+        const maxAllowed = Math.min(MAX_SIDEBAR_WIDTH, Math.floor(window.innerWidth * 0.45));
+        const finalWidth = Math.min(Math.max(upEvent.clientX, MIN_SIDEBAR_WIDTH), maxAllowed);
+        setWidth(finalWidth);
+        lastGoodWidthRef.current = finalWidth;
+        try {
+          localStorage.setItem(STORAGE_KEY, String(finalWidth));
+        } catch {
+          // ignore
+        }
+      }
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+  }, [isCollapsed, onSetCollapsed, onToggleCollapse]);
 
   const handleResetWidth = useCallback(() => {
     setWidth(DEFAULT_SIDEBAR_WIDTH);
+    lastGoodWidthRef.current = DEFAULT_SIDEBAR_WIDTH;
     try {
       localStorage.setItem(STORAGE_KEY, String(DEFAULT_SIDEBAR_WIDTH));
     } catch {
@@ -181,15 +261,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   if (isCollapsed) {
     return (
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={onToggleCollapse}
-        title="Open Analysis Controls"
-        className="fixed top-16 left-4 z-40 h-9 w-9 rounded-lg bg-card shadow-md border-border text-foreground hover:text-primary"
-      >
-        <PanelLeftOpen className="h-4 w-4" />
-      </Button>
+      <>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => {
+            if (onSetCollapsed) onSetCollapsed(false);
+            else onToggleCollapse();
+            setWidth(lastGoodWidthRef.current);
+          }}
+          title="Open Analysis Controls"
+          className="fixed top-16 left-4 z-40 h-9 w-9 rounded-lg bg-card shadow-md border-border text-foreground hover:text-primary transition-transform hover:scale-105"
+        >
+          <PanelLeftOpen className="h-4 w-4" />
+        </Button>
+        {/* Left edge drag strip to pull-open */}
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          onPointerDown={startUncollapseDrag}
+          title="Drag to open sidebar"
+          className="absolute top-0 left-0 w-3 h-full cursor-col-resize z-40 select-none group flex items-center justify-center transition-colors"
+        >
+          <div className="w-[3px] h-14 rounded-r-full bg-border/80 group-hover:bg-primary group-hover:h-24 transition-all duration-150" />
+        </div>
+      </>
     );
   }
 
@@ -228,10 +324,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside
-      style={{ width: `${width}px` }}
+      style={{
+        width: `${width}px`,
+        maxWidth: `${MAX_SIDEBAR_WIDTH}px`,
+        minWidth: isResizing && width === 0 ? 0 : `${MIN_SIDEBAR_WIDTH}px`,
+      }}
       className={cn(
-        "relative shrink-0 h-full border-r border-border bg-card/60 flex flex-col select-none",
-        isResizing ? "transition-none select-none" : "transition-[width] duration-75 ease-out"
+        "relative shrink-0 h-full border-r border-border bg-card/60 flex flex-col select-none group/sidebar",
+        isResizing ? "transition-none select-none" : "transition-[width] duration-75 ease-out",
+        isResizing && width === 0 && "opacity-20 pointer-events-none"
       )}
     >
       {/* Header */}
@@ -530,26 +631,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
           if (e.key === "ArrowLeft") {
             const next = Math.max(width - 16, MIN_SIDEBAR_WIDTH);
             setWidth(next);
+            lastGoodWidthRef.current = next;
             try {
               localStorage.setItem(STORAGE_KEY, String(next));
             } catch {}
           } else if (e.key === "ArrowRight") {
-            const next = Math.min(width + 16, MAX_SIDEBAR_WIDTH);
+            const maxAllowed = Math.min(MAX_SIDEBAR_WIDTH, Math.floor(window.innerWidth * 0.45));
+            const next = Math.min(width + 16, maxAllowed);
             setWidth(next);
+            lastGoodWidthRef.current = next;
             try {
               localStorage.setItem(STORAGE_KEY, String(next));
             } catch {}
           }
         }}
-        title="Drag to resize sidebar • Double-click to reset"
+        title="Drag to resize • Drag left to hide • Double-click to reset"
         className={cn(
-          "absolute top-0 -right-2 w-4 h-full cursor-col-resize z-40 select-none flex items-center justify-center transition-colors group focus-visible:outline-none",
-          isResizing && "bg-primary/15"
+          "absolute top-0 -right-2 w-4 h-full cursor-col-resize z-50 select-none flex items-center justify-center transition-colors group focus-visible:outline-none",
+          isResizing && "bg-primary/20"
         )}
       >
+        {/* Border line highlight on hover */}
+        <div className="absolute top-0 right-[7px] w-[2px] h-full bg-transparent group-hover:bg-primary/60 transition-colors pointer-events-none" />
+        {/* Centered pill indicator */}
         <div
           className={cn(
-            "w-[3px] h-9 rounded-full bg-border/80 group-hover:bg-primary group-hover:h-16 transition-all duration-150 shadow-2xs",
+            "w-[3px] h-10 rounded-full bg-border/90 group-hover:bg-primary group-hover:h-24 group-hover:w-[3.5px] transition-all duration-150 shadow-xs z-10",
             isResizing && "bg-primary h-full w-[3px] rounded-none opacity-100"
           )}
         />

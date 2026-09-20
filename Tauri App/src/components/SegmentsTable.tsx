@@ -20,7 +20,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -157,21 +156,19 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
 
   return (
     <Card className="border-border/80 bg-card shadow-sm rounded-xl overflow-hidden">
-      <CardHeader className="py-4 px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/70 bg-card">
-        <div>
-          <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+      <CardHeader className="py-3 px-6 flex flex-row items-center justify-between gap-4 border-b border-border/70 bg-card">
+        <div className="flex items-center gap-2 min-w-0">
+          <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2 shrink-0">
             <Layers className="size-4 text-primary" />
             <span>Detected Coral Segments Breakdown</span>
           </CardTitle>
-          <CardDescription className="text-xs text-muted-foreground mt-0.5">
-            Dense instance boundaries, taxonomy identification, and benthic condition assessment
-          </CardDescription>
+          <InfoTooltip content="Dense instance boundaries, taxonomy identification, and benthic condition assessment" />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0 flex-nowrap">
           <Badge
             variant="outline"
-            className="font-mono text-xs bg-muted/40 text-muted-foreground border-border/80"
+            className="font-mono text-xs bg-muted/40 text-muted-foreground border-border/80 shrink-0"
           >
             <span className="text-muted-foreground/60 mr-1 font-sans">Resolution:</span>
             {stats.image_resolution && stats.image_resolution !== "0x0"
@@ -180,7 +177,7 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
           </Badge>
           <Badge
             variant="outline"
-            className="font-mono text-xs bg-muted/40 text-muted-foreground border-border/80"
+            className="font-mono text-xs bg-muted/40 text-muted-foreground border-border/80 shrink-0"
           >
             <span className="text-muted-foreground/60 mr-1 font-sans">Coverage:</span>
             {isLoading ? (
@@ -194,7 +191,7 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
               </>
             )}
           </Badge>
-          <Badge variant="coral" className="text-xs font-medium px-2.5 py-0.5">
+          <Badge variant="coral" className="text-xs font-medium px-2.5 py-0.5 shrink-0">
             {isLoading ? (
               <Skeleton className="h-3.5 w-14 inline-block align-middle" />
             ) : (
