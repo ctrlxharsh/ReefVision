@@ -78,10 +78,10 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
       </CardHeader>
       <CardContent
         className={cn(
-          "p-0 relative flex items-center justify-center min-h-[380px] max-h-[540px] overflow-hidden select-none transition-colors",
+          "p-0 relative flex items-center justify-center overflow-hidden select-none transition-colors",
           isDark
             ? "bg-slate-950"
-            : "bg-slate-900/[0.03] border-inner"
+            : "bg-slate-900/[0.03]"
         )}
       >
         {src ? (
@@ -90,7 +90,7 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
               src={src}
               alt={title}
               className={cn(
-                "max-h-[540px] w-auto max-w-full object-contain cursor-pointer transition-opacity duration-300 p-2",
+                "w-full h-auto max-h-[68vh] object-contain cursor-pointer transition-opacity duration-300 block",
                 isLoading && isOverlay ? "opacity-25 blur-[1px]" : "opacity-100"
               )}
               onClick={onOpen}

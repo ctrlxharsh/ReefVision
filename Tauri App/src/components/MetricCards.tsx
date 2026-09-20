@@ -1,6 +1,6 @@
 import React from "react";
 import { Target, Waves, Crosshair, ShieldCheck } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThreeDotsLoader } from "./ThreeDotsLoader";
 import { SummaryStats } from "../types";
@@ -70,18 +70,21 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         return (
           <Card
             key={c.id}
-            className="border-border/80 bg-card shadow-xs hover:shadow-sm transition-all duration-150"
+            className="border-border/80 bg-card shadow-xs hover:shadow-sm transition-all duration-150 p-5 flex flex-col justify-between"
           >
-            <CardHeader className="flex flex-row items-center justify-between p-5 pb-2">
-              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {/* Header: Title and Icon with constant vertical alignment */}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground truncate">
                 {c.title}
-              </CardTitle>
-              <div className="size-8 rounded-lg flex items-center justify-center bg-muted/60 text-muted-foreground">
+              </span>
+              <div className="size-8 rounded-lg flex items-center justify-center bg-muted/60 text-muted-foreground shrink-0">
                 <Icon className="size-4" />
               </div>
-            </CardHeader>
-            <CardContent className="p-5 pt-1 flex flex-col gap-2">
-              <div className="text-2xl font-bold font-mono tracking-tight text-foreground min-h-[32px] flex items-center">
+            </div>
+
+            {/* Content: Value and Status with uniform spacing rhythm */}
+            <div className="flex flex-col gap-2 mt-3.5">
+              <div className="text-2xl font-bold font-mono tracking-tight text-foreground leading-none h-7 flex items-center">
                 {isLoading ? (
                   <ThreeDotsLoader size="sm" color="#0d7c85" />
                 ) : (
@@ -91,12 +94,12 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
               <div className="flex items-center">
                 <Badge
                   variant={c.badgeVariant}
-                  className="text-[11px] font-medium px-2 py-0.5"
+                  className="h-5 text-[11px] font-medium px-2 inline-flex items-center"
                 >
                   {c.sub}
                 </Badge>
               </div>
-            </CardContent>
+            </div>
           </Card>
         );
       })}
