@@ -5,12 +5,12 @@ import {
   Rocket,
   DownloadCloud,
   AlertCircle,
-  RefreshCw,
   CheckCircle2,
   Check,
   Cpu,
   Zap,
   Trash2,
+  X,
 } from "lucide-react";
 import JSZip from "jszip";
 import { BrandLogo } from "../components/BrandLogo";
@@ -278,14 +278,6 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
     return info.gpu_name || "CPU Engine";
   };
 
-  const getEngineBadgeClass = (info: DeviceInfo | null): string => {
-    if (!info) return "cpu";
-    if (info.device_type === "gpu" || info.active_provider?.includes("CUDA")) return "cuda";
-    if (info.active_provider?.includes("CoreML") || info.active_provider?.includes("DirectML")) return "coreml";
-    if (info.mode === "cpu") return "cpu-single";
-    return "cpu";
-  };
-
   // Compute active sample subset
   const sampleSubset = useMemo(() => {
     if (selectedPreset === "First 6 Samples") return availableSamples.slice(0, 6);
@@ -434,139 +426,181 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
         <div className="portal-brand-col">
           <BrandLogo />
 
-          {/* Backend connection pill */}
-          <div style={{ marginBottom: "1rem" }}>
-            {isBackendConnected ? (
-              <div className="models-ready-pill" style={{ background: "#ecfdf5", borderColor: "#a7f3d0", color: "#047857" }}>
-                <CheckCircle2 size={14} />
-                <span>Vision Engine Connected</span>
-              </div>
-            ) : (
-              <div
-                className="locked-notice"
-                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 0, padding: "8px 12px" }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <RefreshCw size={14} className={isCheckingBackend ? "spin" : ""} />
-                  <span style={{ fontSize: "0.78rem" }}>
-                    {isCheckingBackend ? "Connecting to Python Backend..." : "Backend Offline (Port 8000)"}
+          {/* System & Model Status Panel */}
+          <div className="rounded-xl border border-slate-200/90 bg-slate-50/50 p-3 shadow-xs mb-3.5">
+            {/* Row 1: Vision Engine Connected */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {isBackendConnected ? (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                   </span>
-                </div>
-                <button
-                  className="btn btn-secondary"
-                  style={{ padding: "3px 8px", fontSize: "0.72rem" }}
-                  onClick={handleManualRetry}
-                >
-                  Retry
-                </button>
+                ) : (
+                  <span className={`h-2 w-2 rounded-full ${isCheckingBackend ? "bg-amber-400 animate-pulse" : "bg-red-500"}`} />
+                )}
+                <span className="text-xs font-bold text-slate-800">Vision Engine</span>
               </div>
-            )}
-          </div>
 
-          {allDownloaded && isBackendConnected && (
-            <div className="models-status-container">
-              <div className="models-status-header">
-                <div className="models-ready-pill">
-                  <CheckCircle2 size={13} className="ready-icon" />
-                  <span>Foundation Models Ready</span>
-                </div>
-                <div className="flex items-center gap-2">
+              {isBackendConnected ? (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                  <Check size={10} strokeWidth={2.5} />
+                  Connected
+                </span>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-medium text-amber-700">
+                    {isCheckingBackend ? "Connecting..." : "Offline"}
+                  </span>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-7 px-2 text-[11px] font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-1.5"
-                    onClick={() => setShowDeleteModal(true)}
-                    disabled={downloadProgress.is_downloading || !!isDeletingModel}
-                    title="Manage and delete individual foundation models"
+                    className="h-6 px-2 text-[10px] font-semibold border-amber-300 hover:bg-amber-50"
+                    onClick={handleManualRetry}
                   >
-                    <Trash2 className="h-3 w-3" />
-                    <span>Delete</span>
+                    Retry
                   </Button>
-                </div>
-              </div>
-
-              <div className="model-chips-row">
-                {MODEL_GROUPS.map((group) => {
-                  const ready = isGroupReady(group.id);
-                  return (
-                    <span
-                      key={group.id}
-                      className={`model-chip ${ready ? "ready" : "needed"}`}
-                      title={`${group.fullName} (${group.size}) - ${ready ? "Ready" : "Download Required"}`}
-                    >
-                      {ready ? (
-                        <Check size={11} className="chip-check" />
-                      ) : (
-                        <AlertCircle size={11} />
-                      )}
-                      <span>{group.name}</span>
-                      {ready && (
-                        <button
-                          type="button"
-                          className="chip-delete-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteModel(group.id);
-                          }}
-                          disabled={downloadProgress.is_downloading || !!isDeletingModel}
-                          title={`Delete ${group.name} (${group.size})`}
-                        >
-                          <Trash2
-                            size={11}
-                            className={isDeletingModel === group.id ? "animate-spin text-red-500" : ""}
-                          />
-                        </button>
-                      )}
-                    </span>
-                  );
-                })}
-              </div>
-
-              {downloadProgress.is_downloading && (
-                <div className="redownload-progress-box">
-                  <div className="progress-info-row">
-                    <span className="progress-filename">{downloadProgress.current_file}</span>
-                    <span className="progress-pct">{downloadProgress.overall_pct}%</span>
-                  </div>
-                  <Progress
-                    value={downloadProgress.overall_pct}
-                    className="h-2 bg-teal-950/20 my-1"
-                    indicatorColor="bg-[#0d7c85]"
-                  />
-                  <div className="progress-detail">{downloadProgress.detail}</div>
                 </div>
               )}
             </div>
-          )}
+
+            {isBackendConnected && (
+              <>
+                <div className="h-px bg-slate-200/70 my-2.5" />
+
+                {/* Row 2: Foundation Models header + Delete/Manage Button */}
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-1.5">
+                    {allDownloaded ? (
+                      <CheckCircle2 size={13} className="text-emerald-600" />
+                    ) : (
+                      <AlertCircle size={13} className="text-amber-600" />
+                    )}
+                    <span className="text-xs font-bold text-slate-800">Foundation Models</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${
+                        allDownloaded
+                          ? "text-emerald-700 bg-emerald-50 border-emerald-200/70"
+                          : "text-amber-700 bg-amber-50 border-amber-200/70"
+                      }`}
+                    >
+                      {allDownloaded ? "Ready" : "Download Required"}
+                    </span>
+                    {allDownloaded && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-6 px-2 text-[10px] font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 border-slate-200 gap-1 rounded-md transition-colors"
+                        onClick={() => setShowDeleteModal(true)}
+                        disabled={downloadProgress.is_downloading || !!isDeletingModel}
+                        title="Manage and delete individual foundation models"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        <span>Manage</span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Row 3: Models list with exact names requested by user */}
+                <div className="flex flex-col gap-1.5">
+                  {MODEL_GROUPS.map((group) => {
+                    const ready = isGroupReady(group.id);
+                    return (
+                      <div
+                        key={group.id}
+                        className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white border border-slate-200/70 text-xs hover:border-slate-300 transition-colors shadow-2xs"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {ready ? (
+                            <Check size={12} className="text-emerald-600 shrink-0" strokeWidth={2.5} />
+                          ) : (
+                            <AlertCircle size={12} className="text-amber-500 shrink-0" />
+                          )}
+                          <span className="font-semibold text-slate-700 text-[11px] truncate" title={group.fullName}>
+                            {group.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          <span className="text-[10px] font-mono text-slate-400 bg-slate-50 border border-slate-200/60 px-1.5 py-0.5 rounded">
+                            {group.size}
+                          </span>
+                          {ready && (
+                            <button
+                              type="button"
+                              className="text-slate-300 hover:text-red-500 transition-colors p-0.5 rounded"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteModel(group.id);
+                              }}
+                              disabled={downloadProgress.is_downloading || !!isDeletingModel}
+                              title={`Delete ${group.name} (${group.size})`}
+                            >
+                              <Trash2
+                                size={11}
+                                className={isDeletingModel === group.id ? "animate-spin text-red-500" : ""}
+                              />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {downloadProgress.is_downloading && (
+                  <div className="mt-2.5 p-2.5 rounded-lg bg-white border border-slate-200/80">
+                    <div className="flex justify-between items-center text-[11px] font-semibold text-slate-800 mb-1">
+                      <span className="truncate max-w-[200px]">{downloadProgress.current_file}</span>
+                      <span className="text-teal-700 font-mono">{downloadProgress.overall_pct}%</span>
+                    </div>
+                    <Progress
+                      value={downloadProgress.overall_pct}
+                      className="h-1.5 bg-slate-100 my-1"
+                      indicatorColor="bg-[#0d7c85]"
+                    />
+                    <div className="text-[10px] text-slate-500">{downloadProgress.detail}</div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
 
           {/* Hardware Acceleration Subcard */}
-          <div className="hw-card">
-            <div className="hw-card-header">
-              <div className="hw-title-group">
-                <Cpu size={14} className="hw-icon" />
-                <span className="hw-box-title">HARDWARE ACCELERATION</span>
+          <div className="rounded-xl border border-slate-200/90 bg-white p-3 shadow-xs">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Cpu size={14} className="text-teal-600" />
+                <span className="text-[11px] font-bold text-[#0f1e4a] tracking-wider uppercase">
+                  Hardware Acceleration
+                </span>
               </div>
-              <div className="hw-live-status">
-                <span className="hw-live-dot" />
-                <span className="hw-live-text">Active</span>
+              <div className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <span className="text-[10px] font-semibold text-emerald-700 uppercase tracking-wide">
+                  Active
+                </span>
               </div>
             </div>
 
-            <div className="hw-active-row">
-              <span className="hw-field-label">Active Engine</span>
-              <div className={`hw-badge ${getEngineBadgeClass(deviceInfo)}`}>
+            <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-50 border border-slate-100 mb-2.5">
+              <span className="text-[11px] font-medium text-slate-500">Active Engine</span>
+              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-white border border-slate-200 text-slate-700 shadow-2xs">
                 {deviceInfo?.device_type === "gpu" || deviceInfo?.active_provider?.includes("CUDA") ? (
-                  <Zap size={11} className="hw-badge-icon" />
+                  <Zap size={11} className="text-amber-500" />
                 ) : (
-                  <Cpu size={11} className="hw-badge-icon" />
+                  <Cpu size={11} className="text-teal-600" />
                 )}
-                <span>{getEngineName(deviceInfo)}</span>
+                <span className="truncate max-w-[170px]">{getEngineName(deviceInfo)}</span>
               </div>
             </div>
 
-            <div className="form-group" style={{ marginBottom: 0, marginTop: "0.85rem" }}>
-              <label className="form-label hw-select-label">
+            <div className="mb-2">
+              <label className="block text-[11px] font-medium text-slate-500 mb-1">
                 Device Preference
               </label>
               <UISelect
@@ -598,7 +632,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               />
             </div>
 
-            <div className="hw-footer-note">
+            <div className="text-[10px] text-slate-400 leading-tight pt-1.5 border-t border-slate-100">
               {deviceInfo?.gpu_available
                 ? "Tensor operations accelerated natively via local GPU execution provider."
                 : "Parallel tensor operations accelerated across all CPU cores via ONNX Runtime."}
@@ -725,30 +759,54 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
             </div>
           ) : (
             <div>
-              {/* Tabs */}
-              <div className="portal-tabs">
-                <div
-                  className={`portal-tab ${activeTab === "upload" ? "active" : ""}`}
+              {/* Modern Segmented Tab Bar */}
+              <div className="inline-flex p-1 rounded-xl bg-slate-100/90 border border-slate-200/80 mb-4 w-fit">
+                <button
+                  type="button"
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    activeTab === "upload"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
                   onClick={() => setActiveTab("upload")}
                 >
-                  <UploadCloud size={18} />
+                  <UploadCloud size={14} className={activeTab === "upload" ? "text-teal-600" : ""} />
                   <span>Upload Images</span>
-                </div>
-                <div
-                  className={`portal-tab ${activeTab === "samples" ? "active" : ""}`}
+                  {stagedImages.length > 0 && (
+                    <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-teal-100 text-teal-700 font-mono">
+                      {stagedImages.length}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    activeTab === "samples"
+                      ? "bg-white text-slate-900 shadow-xs"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
                   onClick={() => setActiveTab("samples")}
                 >
-                  <FolderHeart size={18} />
+                  <FolderHeart size={14} className={activeTab === "samples" ? "text-teal-600" : ""} />
                   <span>Sample Library</span>
-                </div>
+                  <span className="ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200/70 text-slate-600 font-mono">
+                    {availableSamples.length || 24}
+                  </span>
+                </button>
               </div>
 
               {/* Tab 1: Upload */}
               {activeTab === "upload" && (
                 <div>
-                  <h4 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--color-navy)", marginBottom: "0.75rem" }}>
-                    Upload Coral Imagery
-                  </h4>
+                  <div className="mb-3">
+                    <h4 className="text-sm font-bold text-[#0f1e4a] tracking-tight">
+                      Upload Coral Imagery
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Import underwater survey photos or a .zip archive for batch instance segmentation
+                    </p>
+                  </div>
+
                   <div
                     className={`dropzone ${dragActive ? "drag-active" : ""}`}
                     onDragOver={onDragOver}
@@ -756,11 +814,11 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                     onDrop={onDrop}
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <UploadCloud size={36} className="dropzone-icon" />
-                    <div className="dropzone-text">
+                    <UploadCloud size={32} className="dropzone-icon text-teal-600 mb-2" />
+                    <div className="dropzone-text text-xs font-semibold text-slate-700">
                       Select or drag & drop coral images or a .zip archive
                     </div>
-                    <div className="dropzone-hint">
+                    <div className="dropzone-hint text-[11px] text-slate-400 mt-0.5">
                       Supported formats: .jpg, .jpeg, .png, .webp, .zip
                     </div>
                     <input
@@ -778,30 +836,73 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                   </div>
 
                   {stagedImages.length > 0 && (
-                    <div style={{ marginTop: "1rem" }}>
-                      <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--color-success)" }}>
-                        ✓ {stagedImages.length} image(s) ready for analysis.
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs font-semibold text-emerald-700 flex items-center gap-1.5">
+                          <CheckCircle2 size={13} />
+                          <span>{stagedImages.length} image(s) ready for analysis</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="text-[11px] font-medium text-slate-400 hover:text-red-600 transition-colors"
+                          onClick={() => setStagedImages([])}
+                        >
+                          Clear all
+                        </button>
                       </div>
-                      <div className="preview-grid">
-                        {stagedImages.slice(0, 6).map((img, idx) => (
-                          <div key={idx} className="preview-card">
-                            <img src={img.dataUrl} alt={img.name} className="preview-img" />
-                            <div className="preview-caption">{img.name}</div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-3">
+                        {stagedImages.slice(0, 12).map((img, idx) => (
+                          <div
+                            key={idx}
+                            className="group relative rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-xs hover:shadow-md hover:border-teal-500/60 transition-all duration-200 flex flex-col"
+                          >
+                            <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
+                              <img
+                                src={img.dataUrl}
+                                alt={img.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
+                              />
+                              <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-slate-900/70 backdrop-blur-md text-white font-mono text-[10px] font-semibold tracking-wider shadow-xs">
+                                #{String(idx + 1).padStart(2, "0")}
+                              </div>
+                              <button
+                                type="button"
+                                className="absolute top-2 right-2 h-5 w-5 rounded-full bg-slate-900/70 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-xs"
+                                onClick={() => setStagedImages((prev) => prev.filter((_, i) => i !== idx))}
+                                title="Remove image"
+                              >
+                                <X size={11} strokeWidth={2.5} />
+                              </button>
+                            </div>
+                            <div className="px-2.5 py-2 bg-white flex items-center justify-between gap-1.5 border-t border-slate-100">
+                              <span
+                                className="text-[11px] font-medium text-slate-700 truncate"
+                                title={img.name}
+                              >
+                                {img.name}
+                              </span>
+                              <span className="text-[9px] font-mono uppercase text-slate-400 bg-slate-50 border border-slate-200/60 px-1 py-0.2 rounded shrink-0">
+                                {img.name.split(".").pop() || "IMG"}
+                              </span>
+                            </div>
                           </div>
                         ))}
                       </div>
 
-                      <button
-                        className="btn btn-primary btn-block"
-                        style={{ padding: "12px", marginTop: "1rem" }}
+                      <Button
+                        type="button"
+                        className="w-full h-11 text-xs font-bold tracking-wider uppercase text-white rounded-xl shadow-xs hover:shadow-md transition-all gap-2 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 active:scale-[0.99]"
                         onClick={handleLaunchUploaded}
                         disabled={isProcessingUpload || !isBackendConnected}
                       >
-                        <Rocket size={18} />
-                        {isProcessingUpload
-                          ? "Preparing Vision Engines..."
-                          : `Launch Reef Vision Studio (${stagedImages.length} Images)`}
-                      </button>
+                        <Rocket size={15} className={isProcessingUpload ? "animate-bounce" : ""} />
+                        <span>
+                          {isProcessingUpload
+                            ? "Preparing Vision Engines..."
+                            : `Launch Reef Vision Studio (${stagedImages.length} Images)`}
+                        </span>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -810,34 +911,44 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               {/* Tab 2: Samples */}
               {activeTab === "samples" && (
                 <div>
-                  <h4 style={{ fontSize: "1rem", fontWeight: 700, color: "var(--color-navy)", marginBottom: "0.75rem" }}>
-                    Select from Sample Library
-                  </h4>
-
-                  <div className="form-group">
-                    <label className="form-label">Batch Selection</label>
-                    <UISelect
-                      value={selectedPreset}
-                      onChange={setSelectedPreset}
-                      options={[
-                        { value: "First 6 Samples", label: "First 6 Samples" },
-                        { value: "First 12 Samples", label: "First 12 Samples" },
-                        { value: "First 24 Samples", label: "First 24 Samples" },
-                        { value: "All Available Samples", label: "All Available Samples" },
-                        { value: "Select Specific Files", label: "Select Specific Files" },
-                      ]}
-                      placeholder="Select batch preset"
-                    />
+                  {/* Single-line Toolbar Header */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pb-2.5 border-b border-slate-100">
+                    <div>
+                      <h4 className="text-sm font-bold text-[#0f1e4a] tracking-tight">
+                        Select from Sample Library
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        {sampleSubset.length} sample image{sampleSubset.length === 1 ? "" : "s"} selected for instance segmentation
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <label className="text-xs font-semibold text-slate-600">Batch:</label>
+                      <div className="w-48">
+                        <UISelect
+                          value={selectedPreset}
+                          onChange={setSelectedPreset}
+                          options={[
+                            { value: "First 6 Samples", label: "First 6 Samples" },
+                            { value: "First 12 Samples", label: "First 12 Samples" },
+                            { value: "First 24 Samples", label: "First 24 Samples" },
+                            { value: "All Available Samples", label: "All Available Samples" },
+                            { value: "Select Specific Files", label: "Select Specific Files" },
+                          ]}
+                          placeholder="Select batch preset"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   {selectedPreset === "Select Specific Files" && (
-                    <div className="form-group">
-                      <label className="form-label">Choose Files</label>
-                      <div style={{ maxHeight: 150, overflowY: "auto", border: "1px solid var(--color-border)", borderRadius: 8, padding: 8 }}>
+                    <div className="form-group mb-3">
+                      <label className="form-label text-xs font-semibold text-slate-600">Choose Files</label>
+                      <div className="max-h-36 overflow-y-auto border border-slate-200 rounded-lg p-2 bg-slate-50/50 space-y-1">
                         {availableSamples.map((s) => (
-                          <label key={s.filename} className="checkbox-label" style={{ marginBottom: 4 }}>
+                          <label key={s.filename} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer hover:bg-white p-1 rounded">
                             <input
                               type="checkbox"
+                              className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                               checked={selectedSpecific.includes(s.filename)}
                               onChange={(e) => {
                                 if (e.target.checked) {
@@ -847,54 +958,87 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                                 }
                               }}
                             />
-                            <span>{s.filename}</span>
+                            <span className="font-mono text-[11px]">{s.filename}</span>
                           </label>
                         ))}
                       </div>
                     </div>
                   )}
 
-                  {/* Thumbnail Preview Grid */}
+                  {/* Thumbnail Preview Grid: 3-column symmetrical grid */}
                   {!isBackendConnected ? (
-                    <div style={{ padding: "2rem", textAlign: "center", background: "var(--color-surface-subtle)", borderRadius: 10, border: "1px dashed var(--color-border)", color: "var(--color-text-muted)", fontSize: "0.85rem" }}>
+                    <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs">
                       Connecting to Python Vision Engine... (Please ensure backend is started)
                     </div>
                   ) : sampleSubset.length === 0 ? (
-                    <div style={{ padding: "2rem", textAlign: "center", background: "var(--color-surface-subtle)", borderRadius: 10, border: "1px dashed var(--color-border)", color: "var(--color-text-muted)", fontSize: "0.85rem" }}>
+                    <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs">
                       No sample images found. Please verify <code>demo_images/</code> folder.
                     </div>
                   ) : (
-                    <div className="preview-grid">
-                      {sampleSubset.slice(0, 6).map((s, idx) => (
-                        <div key={idx} className="preview-card">
-                          <img
-                            src={getSampleImageUrl(s.filename)}
-                            alt={s.filename}
-                            className="preview-img"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%23eee'/><text x='50%' y='50%' text-anchor='middle' fill='%23aaa' dy='.3em'>Image</text></svg>";
-                            }}
-                          />
-                          <div className="preview-caption">#{idx + 1}: {s.filename.slice(0, 18)}</div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 my-3">
+                      {sampleSubset.slice(0, selectedPreset === "First 6 Samples" ? 6 : 12).map((s, idx) => (
+                        <div
+                          key={idx}
+                          className="group relative rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-xs hover:shadow-md hover:border-teal-500/60 transition-all duration-200 flex flex-col"
+                        >
+                          <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
+                            <img
+                              src={getSampleImageUrl(s.filename)}
+                              alt={s.filename}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%23eee'/><text x='50%' y='50%' text-anchor='middle' fill='%23aaa' dy='.3em'>Image</text></svg>";
+                              }}
+                            />
+                            {/* Floating index badge top-left */}
+                            <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-slate-900/70 backdrop-blur-md text-white font-mono text-[10px] font-semibold tracking-wider shadow-xs">
+                              #{String(idx + 1).padStart(2, "0")}
+                            </div>
+                            {/* Selected indicator top-right */}
+                            <div className="absolute top-2 right-2 h-5 w-5 rounded-full bg-emerald-500/90 text-white flex items-center justify-center shadow-xs">
+                              <Check size={11} strokeWidth={3} />
+                            </div>
+                          </div>
+
+                          {/* Clean metadata caption bar */}
+                          <div className="px-2.5 py-2 bg-white flex items-center justify-between gap-1.5 border-t border-slate-100">
+                            <span
+                              className="text-[11px] font-medium text-slate-700 truncate"
+                              title={s.filename}
+                            >
+                              {s.filename}
+                            </span>
+                            <span className="text-[9px] font-mono uppercase text-slate-400 bg-slate-50 border border-slate-200/60 px-1 py-0.2 rounded shrink-0">
+                              {s.filename.split(".").pop() || "PNG"}
+                            </span>
+                          </div>
                         </div>
                       ))}
                     </div>
                   )}
 
-                  <button
-                    className="btn btn-primary btn-block"
-                    style={{ padding: "12px", marginTop: "1rem" }}
+                  {sampleSubset.length > 12 && selectedPreset !== "First 6 Samples" && (
+                    <div className="text-center text-[11px] text-slate-400 mb-2">
+                      Showing first 12 of {sampleSubset.length} sample images. All {sampleSubset.length} will be loaded into studio.
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    className="w-full h-11 text-xs font-bold tracking-wider uppercase text-white rounded-xl shadow-xs hover:shadow-md transition-all gap-2 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 active:scale-[0.99] mt-2"
                     onClick={handleLaunchSamples}
                     disabled={isLoadingSamples || sampleSubset.length === 0 || !isBackendConnected}
                   >
-                    <Rocket size={18} />
-                    {isLoadingSamples
-                      ? "Loading Sample Images..."
-                      : !isBackendConnected
-                      ? "Waiting for Vision Engine..."
-                      : `Launch Reef Vision Studio (${sampleSubset.length} Samples)`}
-                  </button>
+                    <Rocket size={15} className={isLoadingSamples ? "animate-bounce" : ""} />
+                    <span>
+                      {isLoadingSamples
+                        ? "Loading Sample Images..."
+                        : !isBackendConnected
+                        ? "Waiting for Vision Engine..."
+                        : `Launch Reef Vision Studio (${sampleSubset.length} Samples)`}
+                    </span>
+                  </Button>
                 </div>
               )}
             </div>
