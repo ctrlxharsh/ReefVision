@@ -15,48 +15,45 @@ interface TopBarProps {
   deviceInfo?: DeviceInfo | null;
 }
 
-export const TopBar: React.FC<TopBarProps> = ({
-  onBack,
-  deviceInfo,
-}) => {
+export const TopBar: React.FC<TopBarProps> = ({ onBack, deviceInfo }) => {
   const isGpu =
     deviceInfo?.device_type === "gpu" ||
     deviceInfo?.active_provider?.includes("CUDA");
 
   return (
-    <header className="top-navbar">
-      {/* Left side: Back to Selection */}
-      <div className="top-navbar-left">
+    <header className="sticky top-0 z-30 flex h-14 w-full shrink-0 items-center justify-between border-b border-border bg-white px-5 shadow-xs">
+      {/* Left: Back to Selection */}
+      <div className="flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
           onClick={onBack}
           title="Return to image library"
-          className="border-slate-200 text-slate-700 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/50 transition-all font-semibold"
+          className="h-8 gap-2 text-xs font-semibold text-slate-700 hover:text-[#0d7c85] hover:border-[#0d7c85] hover:bg-teal-50/40 transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           <span>Back to Selection</span>
         </Button>
       </div>
 
-      {/* Center: Andromeida Reef Vision Brand */}
-      <div className="top-navbar-center">
+      {/* Center: Brand Identity */}
+      <div className="flex items-center justify-center">
         <BrandLogo variant="topbar" />
       </div>
 
-      {/* Right side: Hardware Engine Indicator */}
-      <div className="top-navbar-right">
+      {/* Right: Hardware Acceleration Badge */}
+      <div className="flex items-center gap-3">
         {deviceInfo && (
           <Badge
             variant="outline"
-            className="border-slate-200 bg-white shadow-xs px-3 py-1 font-mono text-[11px] text-slate-700 gap-1.5"
-            title={`Active Device: ${deviceInfo.active_provider}`}
+            className="h-8 gap-2 px-3 py-1 font-mono text-[11px] font-medium text-slate-700 bg-slate-50/60 border-slate-200"
+            title={`Active Provider: ${deviceInfo.active_provider}`}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             {isGpu ? (
-              <Zap className="h-3 w-3 text-amber-500 inline" />
+              <Zap className="h-3.5 w-3.5 text-amber-500" />
             ) : (
-              <Cpu className="h-3 w-3 text-[#0d7c85] inline" />
+              <Cpu className="h-3.5 w-3.5 text-[#0d7c85]" />
             )}
             <span>
               {deviceInfo.active_provider.includes("CUDA")

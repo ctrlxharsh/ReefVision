@@ -1,8 +1,33 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Sliders, Palette, Cpu, ChevronRight, ChevronDown, Minus, Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { UISelect, UISelectOption } from "./UISelect";
-import { InfoTooltip } from "./InfoTooltip";
+import {
+  Sliders,
+  Palette,
+  Cpu,
+  Minus,
+  Plus,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { InfoTooltip } from "./InfoTooltip";
 import { DeviceInfo, CoralSegment } from "../types";
 
 interface SidebarProps {
@@ -73,11 +98,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   devicePreference,
   onDevicePreferenceChange,
 }) => {
-  const [paramsExpanded, setParamsExpanded] = useState(true);
-  const [displayExpanded, setDisplayExpanded] = useState(true);
-  const [hwExpanded, setHwExpanded] = useState(false);
-
-  // Adjustable Sidebar Width (Hardware-accelerated drag with zero-lag rAF)
   const sidebarRef = useRef<HTMLElement>(null);
   const widthRef = useRef<number>(DEFAULT_SIDEBAR_WIDTH);
   const rafIdRef = useRef<number | null>(null);
@@ -106,19 +126,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     e.preventDefault();
     setIsDragging(true);
     isDraggingRef.current = true;
-  }, []);
-
-  const resetWidth = useCallback(() => {
-    widthRef.current = DEFAULT_SIDEBAR_WIDTH;
-    setSidebarWidth(DEFAULT_SIDEBAR_WIDTH);
-    if (sidebarRef.current) {
-      sidebarRef.current.style.width = `${DEFAULT_SIDEBAR_WIDTH}px`;
-      sidebarRef.current.style.minWidth = `${DEFAULT_SIDEBAR_WIDTH}px`;
-      sidebarRef.current.style.maxWidth = `${DEFAULT_SIDEBAR_WIDTH}px`;
-    }
-    try {
-      localStorage.setItem("reef_sidebar_width", String(DEFAULT_SIDEBAR_WIDTH));
-    } catch {}
   }, []);
 
   useEffect(() => {
@@ -190,32 +197,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "taxonomy_condition", label: "Taxonomy + Health" },
   ];
 
-  const segmentSelectOptions: UISelectOption[] = [
-    { value: "all", label: "All Corals" },
-    ...segments.map((s) => ({
-      value: String(s.id),
-      label: `Coral #${s.id} [${s.genus}] (${s.condition}, ${s.area_pct}%)`,
-    })),
-  ];
-
-  const deviceSelectOptions: UISelectOption[] = [
-    { value: "auto", label: "Auto (Recommended)" },
-    {
-      value: "gpu",
-      label: deviceInfo?.gpu_available
-        ? `GPU (${deviceInfo.gpu_name})`
-        : "GPU [Unavailable]",
-    },
-    {
-      value: "multithread_cpu",
-      label: `Multi-Thread CPU (${deviceInfo?.cpu_count || 4} Threads)`,
-    },
-    {
-      value: "cpu",
-      label: "Single-Thread CPU",
-    },
-  ];
-
   const handleMinAreaStep = (delta: number) => {
     const nextVal = Math.max(10, Math.min(50000, minAreaPx + delta));
     onMinAreaPxChange(nextVal);
@@ -223,145 +204,143 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   if (isCollapsed) {
     return (
-      <button
-        type="button"
-        className="sidebar-floating-expand-btn"
+      <Button
+        variant="outline"
+        size="icon"
         onClick={onToggleCollapse}
         title="Open Analysis Controls"
         aria-label="Open Analysis Controls"
+        className="fixed top-16 left-4 z-40 h-9 w-9 rounded-lg bg-white shadow-md border-slate-200 text-slate-700 hover:text-[#0d7c85]"
       >
-        <PanelLeftOpen size={16} />
-      </button>
+        <PanelLeftOpen className="h-4 w-4" />
+      </Button>
     );
   }
-
-  const dynamicWidth = sidebarWidth;
 
   return (
     <aside
       ref={sidebarRef}
-      className={`app-sidebar ${isDragging ? "resizing" : ""}`}
+      className="relative flex flex-col shrink-0 h-full border-r border-border bg-white select-none transition-all duration-75"
       style={{
-        width: `${dynamicWidth}px`,
-        minWidth: `${dynamicWidth}px`,
-        maxWidth: `${dynamicWidth}px`,
+        width: `${sidebarWidth}px`,
+        minWidth: `${sidebarWidth}px`,
+        maxWidth: `${sidebarWidth}px`,
       }}
     >
-      {/* Sidebar Header Title & Collapse Button */}
-      <div className="sidebar-header">
-        <div className="sidebar-title-group">
-          <Sliders size={16} className="sidebar-header-icon" />
-          <span className="sidebar-header-title">Analysis Controls</span>
+      {/* Sidebar Header */}
+      <div className="flex h-12 items-center justify-between border-b border-border px-4 shrink-0 bg-slate-50/50">
+        <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-[#0f1e4a]">
+          <Sliders className="h-4 w-4 text-[#0d7c85]" />
+          <span>Analysis Controls</span>
         </div>
-        <button
-          type="button"
-          className="sidebar-collapse-icon-btn"
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={onToggleCollapse}
           title="Collapse sidebar"
           aria-label="Collapse sidebar"
+          className="h-7 w-7 text-slate-400 hover:text-slate-700"
         >
-          <PanelLeftClose size={16} />
-        </button>
+          <PanelLeftClose className="h-4 w-4" />
+        </Button>
       </div>
 
-      <div className="sidebar-content">
-        {/* Expander 1: Inference Parameters */}
-        <div className="sidebar-expander">
-          <div
-            className="expander-header"
-            onClick={() => setParamsExpanded(!paramsExpanded)}
-          >
-            <div className="expander-title-group">
-              <Sliders size={14} className="expander-icon" />
-              <span className="expander-title">Inference Parameters</span>
-            </div>
-            {paramsExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </div>
-
-          {paramsExpanded && (
-            <div className="expander-body">
+      {/* Sidebar Accordion Content */}
+      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2 text-xs">
+        <Accordion type="multiple" defaultValue={["params", "display", "hardware"]} className="w-full">
+          {/* Section 1: Inference Parameters */}
+          <AccordionItem value="params" className="border-b border-border">
+            <AccordionTrigger className="py-3 text-xs font-semibold text-slate-800 hover:text-[#0d7c85]">
+              <div className="flex items-center gap-2">
+                <Sliders className="h-3.5 w-3.5 text-[#0d7c85]" />
+                <span>Inference Parameters</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-1 pb-4">
               {/* Grid Density */}
-              <div className="form-group">
-                <div className="form-label-row">
-                  <div className="form-label-with-info">
-                    <span className="form-label">Grid Density</span>
-                    <InfoTooltip content="Density of input prompt points sampled across the image grid (points per side). Higher values (24–36) detect smaller coral fragments and intricate colonies, but increase processing time." />
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                    <span>Grid Density</span>
+                    <InfoTooltip content="Density of input prompt points sampled across the image grid. Higher values (24–36) detect smaller coral fragments and intricate colonies, but increase processing time." />
                   </div>
-                  <span className="form-slider-val">{pointsPerSide}</span>
+                  <span className="font-mono text-[11px] font-semibold text-[#0d7c85] bg-teal-50 px-1.5 py-0.5 rounded">
+                    {pointsPerSide}
+                  </span>
                 </div>
-                <div className="pt-2 pb-1">
-                  <Slider
-                    min={8}
-                    max={36}
-                    step={4}
-                    value={[pointsPerSide]}
-                    onValueChange={(vals) => onPointsPerSideChange(vals[0])}
-                  />
-                </div>
+                <Slider
+                  min={8}
+                  max={36}
+                  step={4}
+                  value={[pointsPerSide]}
+                  onValueChange={(vals) => onPointsPerSideChange(vals[0])}
+                />
               </div>
 
               {/* IoU Threshold */}
-              <div className="form-group">
-                <div className="form-label-row">
-                  <div className="form-label-with-info">
-                    <span className="form-label">IoU Threshold</span>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                    <span>IoU Threshold</span>
                     <InfoTooltip content="Predicted Intersection-over-Union (IoU) quality cutoff. Discards masks with low model confidence to eliminate false positives." />
                   </div>
-                  <span className="form-slider-val">{iouThresh.toFixed(2)}</span>
+                  <span className="font-mono text-[11px] font-semibold text-[#0d7c85] bg-teal-50 px-1.5 py-0.5 rounded">
+                    {iouThresh.toFixed(2)}
+                  </span>
                 </div>
-                <div className="pt-2 pb-1">
-                  <Slider
-                    min={0.20}
-                    max={0.98}
-                    step={0.02}
-                    value={[iouThresh]}
-                    onValueChange={(vals) => onIouThreshChange(vals[0])}
-                  />
-                </div>
+                <Slider
+                  min={0.2}
+                  max={0.98}
+                  step={0.02}
+                  value={[iouThresh]}
+                  onValueChange={(vals) => onIouThreshChange(vals[0])}
+                />
               </div>
 
               {/* Stability Threshold */}
-              <div className="form-group">
-                <div className="form-label-row">
-                  <div className="form-label-with-info">
-                    <span className="form-label">Stability Threshold</span>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                    <span>Stability Threshold</span>
                     <InfoTooltip content="Filters masks with unstable boundaries across varying binarization cutoffs. Ensures coral outlines remain sharp and precise." />
                   </div>
-                  <span className="form-slider-val">{stabilityThresh.toFixed(2)}</span>
+                  <span className="font-mono text-[11px] font-semibold text-[#0d7c85] bg-teal-50 px-1.5 py-0.5 rounded">
+                    {stabilityThresh.toFixed(2)}
+                  </span>
                 </div>
-                <div className="pt-2 pb-1">
-                  <Slider
-                    min={0.20}
-                    max={0.99}
-                    step={0.01}
-                    value={[stabilityThresh]}
-                    onValueChange={(vals) => onStabilityThreshChange(vals[0])}
-                  />
-                </div>
+                <Slider
+                  min={0.2}
+                  max={0.99}
+                  step={0.01}
+                  value={[stabilityThresh]}
+                  onValueChange={(vals) => onStabilityThreshChange(vals[0])}
+                />
               </div>
 
               {/* Min Mask Area */}
-              <div className="form-group form-group-last">
-                <div className="form-label-row">
-                  <div className="form-label-with-info">
-                    <span className="form-label">Min Mask Area</span>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                    <span>Min Mask Area</span>
                     <InfoTooltip content="Minimum pixel count threshold for detected corals. Discards tiny noise specks and negligible debris below this size." />
                   </div>
-                  <span className="form-slider-val">{minAreaPx} px</span>
+                  <span className="font-mono text-[11px] font-semibold text-slate-600">
+                    {minAreaPx} px
+                  </span>
                 </div>
-                <div className="stepper-box">
-                  <button
+                <div className="flex items-center gap-1">
+                  <Button
                     type="button"
-                    className="stepper-btn"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-slate-600"
                     onClick={() => handleMinAreaStep(-50)}
                     title="Decrease by 50 px"
-                    aria-label="Decrease mask area"
                   >
-                    <Minus size={13} />
-                  </button>
-                  <input
+                    <Minus className="h-3.5 w-3.5" />
+                  </Button>
+                  <Input
                     type="number"
-                    className="stepper-input"
                     min={10}
                     max={50000}
                     step={50}
@@ -370,209 +349,219 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       const val = parseInt(e.target.value, 10);
                       if (!isNaN(val)) onMinAreaPxChange(Math.max(10, Math.min(50000, val)));
                     }}
+                    className="h-8 text-center font-mono text-xs"
                   />
-                  <button
+                  <Button
                     type="button"
-                    className="stepper-btn"
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-slate-600"
                     onClick={() => handleMinAreaStep(50)}
                     title="Increase by 50 px"
-                    aria-label="Increase mask area"
                   >
-                    <Plus size={13} />
-                  </button>
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            </AccordionContent>
+          </AccordionItem>
 
-        {/* Expander 2: Display Controls */}
-        <div className="sidebar-expander">
-          <div
-            className="expander-header"
-            onClick={() => setDisplayExpanded(!displayExpanded)}
-          >
-            <div className="expander-title-group">
-              <Palette size={14} className="expander-icon" />
-              <span className="expander-title">Display Controls</span>
-            </div>
-            {displayExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </div>
-
-          {displayExpanded && (
-            <div className="expander-body">
-              {/* Layout View: Segmented Control */}
-              <div className="form-group">
-                <div className="form-category-header-row">
-                  <span className="form-category-header">LAYOUT</span>
+          {/* Section 2: Display Controls */}
+          <AccordionItem value="display" className="border-b border-border">
+            <AccordionTrigger className="py-3 text-xs font-semibold text-slate-800 hover:text-[#0d7c85]">
+              <div className="flex items-center gap-2">
+                <Palette className="h-3.5 w-3.5 text-[#0d7c85]" />
+                <span>Display Controls</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 pt-1 pb-4">
+              {/* Layout Mode */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <span>Layout</span>
                   <InfoTooltip content="Switch between dual comparison canvas, full overlay, source image only, or isolated coral masks on black background." />
                 </div>
-                <div className="segmented-control">
+                <div className="grid grid-cols-2 gap-1.5">
                   {layoutOpts.map((opt) => (
-                    <button
+                    <Button
                       key={opt.id}
                       type="button"
-                      className={`segmented-button ${layoutMode === opt.id ? "active" : ""}`}
+                      variant={layoutMode === opt.id ? "default" : "outline"}
+                      size="sm"
                       onClick={() => onLayoutModeChange(opt.id)}
+                      className={`h-7 px-2 text-[11px] font-medium transition-all ${
+                        layoutMode === opt.id
+                          ? "bg-[#0d7c85] text-white hover:bg-[#0d7c85]/90"
+                          : "text-slate-600 hover:text-slate-900 bg-white"
+                      }`}
                     >
                       {opt.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
 
-              {/* Overlay Color Mode: Clean Radio List */}
-              <div className="form-group">
-                <div className="form-category-header-row">
-                  <span className="form-category-header">COLOR MODE</span>
+              {/* Color Mode */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <span>Color Mode</span>
                   <InfoTooltip content="Colony instances: distinct color per coral. Health condition: healthy green vs bleached red. Taxonomy: genus classification." />
                 </div>
-                <div className="radio-list">
+                <RadioGroup
+                  value={colorMode}
+                  onValueChange={onColorModeChange}
+                  className="gap-2.5"
+                >
                   {colorModes.map((m) => (
-                    <label key={m.id} className={`radio-item ${colorMode === m.id ? "checked" : ""}`}>
-                      <input
-                        type="radio"
-                        name="colorMode"
-                        value={m.id}
-                        checked={colorMode === m.id}
-                        onChange={() => onColorModeChange(m.id)}
-                      />
-                      <span>{m.label}</span>
-                    </label>
+                    <div key={m.id} className="flex items-center space-x-2">
+                      <RadioGroupItem value={m.id} id={`color-${m.id}`} />
+                      <Label
+                        htmlFor={`color-${m.id}`}
+                        className="text-xs font-normal text-slate-700 cursor-pointer select-none"
+                      >
+                        {m.label}
+                      </Label>
+                    </div>
                   ))}
-                </div>
+                </RadioGroup>
               </div>
 
               {/* Overlay Opacity */}
-              <div className="form-group">
-                <div className="form-label-row">
-                  <div className="form-label-with-info">
-                    <span className="form-label">Overlay Opacity</span>
-                    <InfoTooltip content="Blends mask colors over the original underwater photograph. Lower values reveal texture; higher values emphasize segmentation." />
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                    <span>Overlay Opacity</span>
+                    <InfoTooltip content="Transparency of segmentation mask colors over the substrate imagery." />
                   </div>
-                  <span className="form-slider-val">{alpha.toFixed(2)}</span>
+                  <span className="font-mono text-[11px] font-semibold text-[#0d7c85] bg-teal-50 px-1.5 py-0.5 rounded">
+                    {alpha.toFixed(2)}
+                  </span>
                 </div>
-                <div className="pt-2 pb-1">
-                  <Slider
-                    min={0.10}
-                    max={0.90}
-                    step={0.05}
-                    value={[alpha]}
-                    onValueChange={(vals) => onAlphaChange(vals[0])}
-                  />
-                </div>
-              </div>
-
-              {/* Two Column Checkboxes */}
-              <div className="form-group">
-                <div className="form-category-header-row">
-                  <span className="form-category-header">ANNOTATIONS</span>
-                  <InfoTooltip content="Toggle visual annotations: sharp contour borders, colony centroid ID badges, and bounding boxes." />
-                </div>
-                <div className="checkbox-columns">
-                  <div className="checkbox-col">
-                    <label className="checkbox-item" title="Draw sharp contour borders around corals">
-                      <input
-                        type="checkbox"
-                        checked={drawContours}
-                        onChange={(e) => onDrawContoursChange(e.target.checked)}
-                      />
-                      <span>Borders</span>
-                    </label>
-                    <label className="checkbox-item" title="Display segment ID numbers at centroids">
-                      <input
-                        type="checkbox"
-                        checked={drawLabels}
-                        onChange={(e) => onDrawLabelsChange(e.target.checked)}
-                      />
-                      <span>ID Badges</span>
-                    </label>
-                  </div>
-                  <div className="checkbox-col">
-                    <label className="checkbox-item" title="Show bounding box rectangles">
-                      <input
-                        type="checkbox"
-                        checked={drawBoxes}
-                        onChange={(e) => onDrawBoxesChange(e.target.checked)}
-                      />
-                      <span>Bounding Boxes</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Highlight Specific Segment */}
-              <div className="form-group form-group-last">
-                <div className="form-category-header-row">
-                  <span className="form-category-header">HIGHLIGHT CORAL</span>
-                  <InfoTooltip content="Dim all other coral colonies to isolate and inspect a specific detected segment." />
-                </div>
-                <UISelect
-                  value={selectedMaskId === null ? "all" : String(selectedMaskId)}
-                  onChange={(val) => onSelectMaskId(val === "all" ? null : Number(val))}
-                  options={segmentSelectOptions}
-                  placeholder="Select coral"
+                <Slider
+                  min={0.05}
+                  max={1.0}
+                  step={0.05}
+                  value={[alpha]}
+                  onValueChange={(vals) => onAlphaChange(vals[0])}
                 />
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* Expander 3: Hardware Acceleration */}
-        <div className="sidebar-expander">
-          <div
-            className="expander-header"
-            onClick={() => setHwExpanded(!hwExpanded)}
-          >
-            <div className="expander-title-group">
-              <Cpu size={14} className="expander-icon" />
-              <span className="expander-title">Hardware Acceleration</span>
-            </div>
-            {hwExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-          </div>
+              {/* Annotations */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <span>Annotations</span>
+                  <InfoTooltip content="Toggle visual overlay guides: boundary contours, identification tag badges, and bounding box extents." />
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="ann-borders"
+                      checked={drawContours}
+                      onCheckedChange={(c) => onDrawContoursChange(!!c)}
+                    />
+                    <Label htmlFor="ann-borders" className="text-xs font-normal text-slate-700 cursor-pointer">
+                      Borders
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="ann-labels"
+                      checked={drawLabels}
+                      onCheckedChange={(c) => onDrawLabelsChange(!!c)}
+                    />
+                    <Label htmlFor="ann-labels" className="text-xs font-normal text-slate-700 cursor-pointer">
+                      ID Badges
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="ann-boxes"
+                      checked={drawBoxes}
+                      onCheckedChange={(c) => onDrawBoxesChange(!!c)}
+                    />
+                    <Label htmlFor="ann-boxes" className="text-xs font-normal text-slate-700 cursor-pointer">
+                      Bounding Boxes
+                    </Label>
+                  </div>
+                </div>
+              </div>
 
-          {hwExpanded && (
-            <div className="expander-body">
-              {deviceInfo && (
-                <div
-                  className={`hw-badge ${
-                    deviceInfo.cuda_available
-                      ? "cuda"
-                      : deviceInfo.active_provider.includes("CoreML")
-                      ? "coreml"
-                      : "cpu"
-                  }`}
-                  style={{ width: "100%", justifyContent: "center", marginBottom: "0.75rem" }}
+              {/* Highlight Coral */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  <span>Highlight Coral</span>
+                  <InfoTooltip content="Isolate and inspect a single identified coral segment." />
+                </div>
+                <Select
+                  value={selectedMaskId !== null ? String(selectedMaskId) : "all"}
+                  onValueChange={(val) => onSelectMaskId(val === "all" ? null : parseInt(val, 10))}
                 >
-                  {deviceInfo.gpu_name}
-                </div>
-              )}
-              <div className="form-group form-group-last">
-                <div className="form-category-header-row">
-                  <span className="form-category-header">COMPUTE DEVICE</span>
-                  <InfoTooltip content="Choose compute hardware engine: GPU acceleration or Multi-Threaded CPU." />
-                </div>
-                <UISelect
-                  value={devicePreference}
-                  onChange={onDevicePreferenceChange}
-                  options={deviceSelectOptions}
-                  placeholder="Select device"
-                />
+                  <SelectTrigger className="h-8 text-xs bg-white">
+                    <SelectValue placeholder="All Corals" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="all">All Corals</SelectItem>
+                    {segments.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>
+                        Coral #{s.id} [{s.genus}] ({s.condition}, {s.area_pct}%)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-          )}
-        </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Section 3: Hardware Acceleration */}
+          <AccordionItem value="hardware" className="border-b-0">
+            <AccordionTrigger className="py-3 text-xs font-semibold text-slate-800 hover:text-[#0d7c85]">
+              <div className="flex items-center gap-2">
+                <Cpu className="h-3.5 w-3.5 text-[#0d7c85]" />
+                <span>Compute Engine</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3 pt-1 pb-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-slate-600 font-medium">Device Preference</Label>
+                <Select value={devicePreference} onValueChange={onDevicePreferenceChange}>
+                  <SelectTrigger className="h-8 text-xs bg-white">
+                    <SelectValue placeholder="Select device" />
+                  </SelectTrigger>
+                  <SelectContent position="popper" sideOffset={4}>
+                    <SelectItem value="auto">
+                      Auto (Recommended)
+                    </SelectItem>
+                    <SelectItem value="gpu" disabled={!deviceInfo?.gpu_available}>
+                      {deviceInfo?.gpu_available
+                        ? `GPU (${deviceInfo.gpu_name})`
+                        : "GPU [Unavailable]"}
+                    </SelectItem>
+                    <SelectItem value="multithread_cpu">
+                      Multi-Thread CPU ({deviceInfo?.cpu_count || 4} Threads)
+                    </SelectItem>
+                    <SelectItem value="cpu">Single-Thread CPU</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                {deviceInfo?.gpu_available
+                  ? "Tensor operations accelerated natively via local GPU execution provider."
+                  : "Parallel tensor operations accelerated across all CPU cores via ONNX Runtime."}
+              </p>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
 
-      {/* Resizer Handle on Right Edge */}
-      {!isCollapsed && (
-        <div
-          className={`sidebar-resizer ${isDragging ? "active" : ""}`}
-          onMouseDown={startResizing}
-          onDoubleClick={resetWidth}
-          title="Drag to resize sidebar • Double-click to reset (320px)"
-        />
-      )}
+      {/* Drag Resize Handle */}
+      <div
+        onMouseDown={startResizing}
+        className={`absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-[#0d7c85]/40 transition-colors ${
+          isDragging ? "bg-[#0d7c85] w-2" : "bg-transparent"
+        }`}
+        title="Drag to resize sidebar"
+      />
     </aside>
   );
 };

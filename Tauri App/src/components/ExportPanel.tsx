@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import {
   Download,
   FileCode,
-  ChevronDown,
-  ChevronRight,
   FileSpreadsheet,
   Image as ImageIcon,
   CheckCircle2,
@@ -12,6 +10,13 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { exportCocoJson, exportCsvData } from "../services/api";
 import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface ExportPanelProps {
   imageName: string;
@@ -84,7 +89,6 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   rawJsonData,
   hasSegments,
 }) => {
-  const [showJson, setShowJson] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
@@ -250,101 +254,91 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   };
 
   return (
-    <div className="space-y-3">
-      {/* Section Header */}
-      <div>
-        <div className="flex items-center gap-2">
-          <Download className="h-5 w-5 text-[#0d7c85]" />
-          <span className="text-base font-bold text-[#0f1e4a]">
-            Export & Data Inspector
-          </span>
-        </div>
-        <p className="text-xs text-slate-500 mt-0.5">
+    <Card className="border-slate-200 bg-white shadow-xs overflow-hidden">
+      <CardHeader className="py-3.5 px-5 border-b border-slate-100 bg-slate-50/40">
+        <CardTitle className="text-sm font-bold text-[#0f1e4a] flex items-center gap-2">
+          <Download className="h-4 w-4 text-[#0d7c85]" />
+          <span>Export & Data Inspector</span>
+        </CardTitle>
+        <CardDescription className="text-xs text-slate-500 mt-0.5">
           Save COCO annotations, visual masks, and benthic data spreadsheets
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
 
-      {/* Export Action Buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleDownloadCoco}
-          disabled={isExporting}
-          className="h-10 bg-white border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold gap-2 shadow-xs"
-        >
-          {isExporting ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
-          ) : (
-            <FileCode className="h-4 w-4 text-[#0d7c85]" />
-          )}
-          <span>Export COCO JSON</span>
-        </Button>
+      <CardContent className="p-5 space-y-4">
+        {/* Export Action Buttons */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleDownloadCoco}
+            disabled={isExporting}
+            className="h-10 bg-white border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold gap-2 shadow-xs"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
+            ) : (
+              <FileCode className="h-4 w-4 text-[#0d7c85]" />
+            )}
+            <span>Export COCO JSON</span>
+          </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleDownloadOverlay}
-          disabled={isExporting || !overlayDataUrl}
-          className="h-10 bg-white border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold gap-2 shadow-xs"
-        >
-          {isExporting ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
-          ) : (
-            <ImageIcon className="h-4 w-4 text-[#0d7c85]" />
-          )}
-          <span>Export Overlay PNG</span>
-        </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleDownloadOverlay}
+            disabled={isExporting || !overlayDataUrl}
+            className="h-10 bg-white border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold gap-2 shadow-xs"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
+            ) : (
+              <ImageIcon className="h-4 w-4 text-[#0d7c85]" />
+            )}
+            <span>Export Overlay PNG</span>
+          </Button>
 
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleDownloadCsv}
-          disabled={isExporting || !hasSegments}
-          className="h-10 bg-white border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold gap-2 shadow-xs"
-        >
-          {isExporting ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
-          ) : (
-            <FileSpreadsheet className="h-4 w-4 text-[#0d7c85]" />
-          )}
-          <span>Export Segments CSV</span>
-        </Button>
-      </div>
-
-      {/* Feedback Alert */}
-      {feedbackMsg && (
-        <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3.5 py-2 text-xs font-semibold text-emerald-700 shadow-xs animate-in fade-in">
-          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-          <span>{feedbackMsg}</span>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleDownloadCsv}
+            disabled={isExporting || !hasSegments}
+            className="h-10 bg-white border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold gap-2 shadow-xs"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
+            ) : (
+              <FileSpreadsheet className="h-4 w-4 text-[#0d7c85]" />
+            )}
+            <span>Export Segments CSV</span>
+          </Button>
         </div>
-      )}
 
-      {/* JSON Inspector Accordion */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
-        <button
-          type="button"
-          className="w-full flex items-center justify-between p-3.5 bg-slate-50/80 hover:bg-slate-100/70 text-left transition-colors"
-          onClick={() => setShowJson(!showJson)}
-        >
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-            <FileCode className="h-4 w-4 text-[#0d7c85]" />
-            <span>Raw Model Output (JSON)</span>
-          </div>
-          {showJson ? (
-            <ChevronDown className="h-4 w-4 text-slate-400" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-slate-400" />
-          )}
-        </button>
-        {showJson && (
-          <div className="p-4 border-t border-slate-200 bg-slate-900">
-            <pre className="text-[11px] font-mono text-slate-200 max-h-80 overflow-auto whitespace-pre-wrap leading-relaxed">
-              {JSON.stringify(rawJsonData, null, 2)}
-            </pre>
+        {/* Feedback Alert */}
+        {feedbackMsg && (
+          <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3.5 py-2 text-xs font-semibold text-emerald-700 shadow-xs animate-in fade-in">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span>{feedbackMsg}</span>
           </div>
         )}
-      </div>
-    </div>
+
+        {/* JSON Inspector Accordion */}
+        <Accordion type="single" collapsible className="w-full border border-slate-200 rounded-lg overflow-hidden">
+          <AccordionItem value="json-output" className="border-b-0">
+            <AccordionTrigger className="px-4 py-3 bg-slate-50/80 hover:bg-slate-100 text-xs font-semibold text-slate-700">
+              <div className="flex items-center gap-2">
+                <FileCode className="h-4 w-4 text-[#0d7c85]" />
+                <span>Raw Model Output Telemetry (JSON)</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="p-0 border-t border-slate-200 bg-slate-950">
+              <pre className="p-4 text-[11px] font-mono text-slate-200 max-h-80 overflow-auto whitespace-pre-wrap leading-relaxed">
+                {JSON.stringify(rawJsonData, null, 2)}
+              </pre>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </CardContent>
+    </Card>
   );
 };

@@ -7,6 +7,7 @@ import { ImageViewer } from "../components/ImageViewer";
 import { MetricCards } from "../components/MetricCards";
 import { SegmentsTable } from "../components/SegmentsTable";
 import { ExportPanel } from "../components/ExportPanel";
+import { Button } from "@/components/ui/button";
 import {
   LoadedImage,
   DeviceInfo,
@@ -185,7 +186,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
     minAreaPx,
   ]);
 
-  // Fast re-render overlay when display controls or selection change (milliseconds!)
+  // Fast re-render overlay when display controls or selection change
   useEffect(() => {
     if (!currentImage || segments.length === 0) return;
     let isCancelled = false;
@@ -243,42 +244,29 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
   }, [images.length]);
 
   return (
-    <div className="analysis-layout">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-50/40">
       {/* Top Bar: Back, Andromeida Branding, Hardware Device */}
-      <TopBar
-        onBack={onBackToUpload}
-        deviceInfo={deviceInfo}
-      />
+      <TopBar onBack={onBackToUpload} deviceInfo={deviceInfo} />
 
       {analysisError && (
-        <div style={{
-          background: "#fef2f2",
-          borderBottom: "1px solid #fecaca",
-          padding: "10px 1.5rem",
-          color: "#dc2626",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          fontSize: "0.85rem",
-          fontWeight: 500,
-          zIndex: 40,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <AlertCircle size={18} style={{ flexShrink: 0 }} />
+        <div className="flex items-center justify-between px-6 py-2.5 bg-red-50 border-b border-red-200 text-red-700 text-xs font-medium z-40">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
             <span>{analysisError}</span>
           </div>
-          <button
-            className="btn btn-secondary"
-            style={{ padding: "4px 10px", fontSize: "0.78rem", borderColor: "#fca5a5", color: "#b91c1c" }}
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onBackToUpload}
+            className="h-7 px-2.5 text-xs border-red-200 text-red-700 hover:bg-red-100/60"
           >
             Return to Download Models
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Analysis Studio Body */}
-      <div className="analysis-body">
+      <div className="flex flex-1 overflow-hidden min-h-0 relative">
         {/* Collapsible Sidebar */}
         <Sidebar
           isCollapsed={isSidebarCollapsed}
@@ -311,30 +299,10 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
           onDevicePreferenceChange={handleDeviceChange}
         />
 
-        {/* Main Studio Canvas & Results */}
-        <main className="main-view">
-          <div className="block-container">
-            {analysisError && (
-              <div
-                style={{
-                  padding: "0.75rem 1rem",
-                  background: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  borderRadius: 8,
-                  color: "#991b1b",
-                  marginBottom: "1rem",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  fontSize: "0.85rem",
-                }}
-              >
-                <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                <span>{analysisError}</span>
-              </div>
-            )}
-
-            {/* Gallery Navigation Toolbar: Extreme Left (Prev + Left Pages), Center (Name), Extreme Right (Right Pages + Next) */}
+        {/* Main Studio Canvas & Results with Guaranteed 24px (space-y-6) Rhythm */}
+        <main className="flex-1 h-full overflow-y-auto min-h-0 bg-slate-50/50">
+          <div className="max-w-7xl mx-auto w-full p-6 space-y-6">
+            {/* Gallery Navigation Toolbar */}
             <PaginationBar
               currentIndex={currentIndex}
               totalImages={images.length}
@@ -356,7 +324,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
               imageResolution={stats.image_resolution}
             />
 
-            {/* 4 KPI Summary Cards with Rich Top Color Accents */}
+            {/* 4 KPI Summary Cards with Consistent Height & Typography */}
             <MetricCards stats={stats} isLoading={isLoading} />
 
             {/* Detected Coral Segments Breakdown Table */}

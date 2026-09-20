@@ -16,7 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { ThreeDotsLoader } from "./ThreeDotsLoader";
 import { CoralSegment, SummaryStats } from "../types";
 
@@ -73,13 +75,8 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
         cell: (info) => {
           const val = info.getValue();
           return (
-            <div className="flex items-center gap-2 min-w-[100px]">
-              <div className="h-1.5 w-16 rounded-full bg-slate-100 overflow-hidden shrink-0">
-                <div
-                  className="h-full bg-[#0d7c85]"
-                  style={{ width: `${Math.min(val, 100)}%` }}
-                />
-              </div>
+            <div className="flex items-center gap-2 min-w-[110px]">
+              <Progress value={val} className="h-1.5 w-16 bg-slate-100" indicatorColor="bg-[#0d7c85]" />
               <span className="text-[11px] font-mono text-slate-600 font-semibold">
                 {val.toFixed(1)}%
               </span>
@@ -94,7 +91,7 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
           return (
             <Badge
               variant={cond === "Bleached" ? "destructive" : "success"}
-              className="text-[10px] px-2 py-0.5 uppercase tracking-wider font-bold"
+              className="text-[10px] px-2 py-0 uppercase tracking-wider font-bold"
             >
               {cond}
             </Badge>
@@ -107,15 +104,12 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
           const val = info.getValue();
           const cond = info.row.original.condition;
           return (
-            <div className="flex items-center gap-2 min-w-[100px]">
-              <div className="h-1.5 w-16 rounded-full bg-slate-100 overflow-hidden shrink-0">
-                <div
-                  className={`h-full ${
-                    cond === "Bleached" ? "bg-red-500" : "bg-emerald-500"
-                  }`}
-                  style={{ width: `${Math.min(val, 100)}%` }}
-                />
-              </div>
+            <div className="flex items-center gap-2 min-w-[110px]">
+              <Progress
+                value={val}
+                className="h-1.5 w-16 bg-slate-100"
+                indicatorColor={cond === "Bleached" ? "bg-red-500" : "bg-emerald-500"}
+              />
               <span className="text-[11px] font-mono text-slate-600 font-semibold">
                 {val.toFixed(1)}%
               </span>
@@ -163,31 +157,29 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
   });
 
   return (
-    <div className="space-y-3">
-      {/* Section Header with Title and Metadata */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <Card className="border-slate-200 bg-white shadow-xs overflow-hidden">
+      {/* Table Card Header with Title and Telemetry Badges */}
+      <CardHeader className="py-3.5 px-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 bg-slate-50/40">
         <div>
-          <div className="flex items-center gap-2">
-            <Layers className="h-5 w-5 text-[#0d7c85]" />
-            <span className="text-base font-bold text-[#0f1e4a]">
-              Detected Coral Segments Breakdown
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <CardTitle className="text-sm font-bold text-[#0f1e4a] flex items-center gap-2">
+            <Layers className="h-4 w-4 text-[#0d7c85]" />
+            <span>Detected Coral Segments Breakdown</span>
+          </CardTitle>
+          <CardDescription className="text-xs text-slate-500 mt-0.5">
             Dense instance boundaries, taxonomy identification, and health status
-          </p>
+          </CardDescription>
         </div>
 
         {/* Metadata Badges */}
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="font-mono text-xs bg-white text-slate-600 border-slate-200">
-            <span className="text-slate-400 mr-1">Resolution:</span>
+            <span className="text-slate-400 mr-1 font-sans">Resolution:</span>
             {stats.image_resolution && stats.image_resolution !== "0x0"
               ? stats.image_resolution.replace("x", " × ")
               : "2048 × 1024"}
           </Badge>
           <Badge variant="outline" className="font-mono text-xs bg-white text-slate-600 border-slate-200">
-            <span className="text-slate-400 mr-1">Coverage:</span>
+            <span className="text-slate-400 mr-1 font-sans">Coverage:</span>
             <span className="text-[#0d7c85] font-semibold">{stats.coral_coverage_pct}%</span>
             <span className="text-slate-400 ml-1">({stats.coral_covered_pixels.toLocaleString("en-US")} px)</span>
           </Badge>
@@ -195,17 +187,17 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
             {stats.total_corals_detected} Instances
           </Badge>
         </div>
-      </div>
+      </CardHeader>
 
-      {/* Table Frame Container */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+      {/* Table Content */}
+      <CardContent className="p-0">
         {isLoading && segments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+          <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
             <Layers className="h-8 w-8 text-[#0d7c85] animate-pulse mb-2" />
             <div className="text-sm font-semibold text-slate-800">
               Segmenting Corals & Classifying Taxa...
             </div>
-            <p className="text-xs mt-1 max-w-sm">
+            <p className="text-xs mt-1 max-w-sm text-slate-500">
               Please wait while vision models extract mask boundaries and compute health indices.
             </p>
             <div className="mt-3">
@@ -213,17 +205,17 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
             </div>
           </div>
         ) : segments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
-            <Search className="h-8 w-8 mb-2 opacity-50" />
-            <div className="text-sm font-medium text-slate-700">No Coral Colonies Detected</div>
-            <p className="text-xs mt-1 max-w-md">
+          <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
+            <Search className="h-8 w-8 mb-2 opacity-40 text-slate-400" />
+            <div className="text-sm font-semibold text-slate-700">No Coral Colonies Detected</div>
+            <p className="text-xs mt-1 max-w-md text-slate-500">
               No coral segments detected with current parameters. Try lowering the IoU or Stability threshold in the sidebar.
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto max-h-[440px] overflow-y-auto">
+          <div className="relative w-full overflow-auto max-h-[460px]">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 bg-slate-50/95 backdrop-blur z-10 border-b border-slate-200">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
@@ -233,7 +225,7 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
                         <TableHead
                           key={header.id}
                           onClick={header.column.getToggleSortingHandler()}
-                          className={`h-9 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-500 ${
+                          className={`h-9 px-4 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 ${
                             isSortable ? "cursor-pointer select-none hover:bg-slate-100 transition-colors" : ""
                           }`}
                         >
@@ -272,7 +264,7 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
                         onSelectSegment &&
                         onSelectSegment(isSelected ? null : s.id)
                       }
-                      className="cursor-pointer hover:bg-teal-50/30 transition-colors"
+                      className="cursor-pointer hover:bg-teal-50/30 transition-colors data-[state=selected]:bg-teal-50"
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id} className="px-4 py-2.5">
@@ -289,7 +281,7 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
             </Table>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
