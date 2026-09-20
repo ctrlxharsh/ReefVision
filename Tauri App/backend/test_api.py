@@ -65,6 +65,32 @@ def test_endpoints():
     dev_auto = resp.json()
     print(f"  Auto select -> mode: {dev_auto.get('mode')}, priority: {dev_auto.get('priority')}, active: {dev_auto.get('gpu_name')}")
 
+    print("Testing /api/models/delete endpoint structure...")
+    # Safe test with empty target so we don't delete local weights during basic unit test
+    resp = client.post("/api/models/delete", json={"filename": "unknown_file.onnx"})
+    assert resp.status_code == 200, f"Models delete failed: {resp.text}"
+    del_res = resp.json()
+    assert "all_downloaded" in del_res, "Response missing all_downloaded"
+    assert "models" in del_res, "Response missing models list"
+    assert del_res["status"] == "success", "Expected status success"
+    print(f"  Delete endpoint response verified: status={del_res['status']}")
+
+    print("Testing constraint enforcement: segment & enrich blocked when models missing...")
+    import app.main as app_main
+    orig_check = app_main.check_models_download_status
+    try:
+        # Mock models as not downloaded
+        app_main.check_models_download_status = lambda: (False, [])
+        resp = client.post("/api/analysis/segment", json={"image_name": "test_img.png"})
+        assert resp.status_code == 428, f"Expected 428 Precondition Required, got {resp.status_code}: {resp.text}"
+        print(f"  /api/analysis/segment correctly blocked with 428: {resp.json().get('detail')}")
+
+        resp = client.post("/api/analysis/enrich", json={"image_name": "test_img.png", "min_area_px": 100})
+        assert resp.status_code == 428, f"Expected 428 Precondition Required, got {resp.status_code}: {resp.text}"
+        print(f"  /api/analysis/enrich correctly blocked with 428: {resp.json().get('detail')}")
+    finally:
+        app_main.check_models_download_status = orig_check
+
     print("\nAll API endpoint unit tests PASSED successfully!")
 
 

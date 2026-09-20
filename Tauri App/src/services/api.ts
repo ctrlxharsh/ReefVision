@@ -1,6 +1,7 @@
 import {
   DeviceInfo,
   ModelStatusResponse,
+  ModelDeleteResponse,
   DownloadProgress,
   SampleItem,
   AnalysisData,
@@ -33,6 +34,22 @@ export async function triggerModelDownload(force: boolean = false, filename?: st
     body: JSON.stringify({ force, filename }),
   });
   if (!res.ok) throw new Error("Failed to start model download");
+}
+
+export async function deleteModel(filename?: string): Promise<ModelDeleteResponse> {
+  const res = await fetch(`${API_BASE}/models/delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      filename: filename || null,
+      all: !filename,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to delete model");
+  }
+  return res.json();
 }
 
 export async function getDownloadProgress(): Promise<DownloadProgress> {

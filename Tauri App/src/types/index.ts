@@ -33,6 +33,15 @@ export interface ModelStatusResponse {
   device_info: DeviceInfo;
 }
 
+export interface ModelDeleteResponse {
+  status: string;
+  message: string;
+  deleted_files: string[];
+  freed_bytes: number;
+  all_downloaded: boolean;
+  models: ModelSpec[];
+}
+
 export interface DownloadProgress {
   is_downloading: boolean;
   overall_pct: number;

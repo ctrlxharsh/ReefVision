@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { AlertCircle } from "lucide-react";
 import { Sidebar } from "../components/Sidebar";
 import { TopBar } from "../components/TopBar";
 import { PaginationBar } from "../components/PaginationBar";
@@ -56,6 +57,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
   // Analysis State
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [analysisStage, setAnalysisStage] = useState<AnalysisStage>("idle");
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [overlaySrc, setOverlaySrc] = useState<string | null>(null);
   const [segments, setSegments] = useState<CoralSegment[]>([]);
   const [stats, setStats] = useState<SummaryStats>({
@@ -116,6 +118,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
     const executeAnalysis = async () => {
       setIsLoading(true);
+      setAnalysisError(null);
       setAnalysisStage("segmenting");
       try {
         // Step 1: Run SAM ViT-B Segmentation
@@ -156,8 +159,11 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
         if (isCancelled) return;
         setOverlaySrc(overlayDataUrl);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Analysis execution error:", err);
+        if (!isCancelled) {
+          setAnalysisError(err?.message || "Analysis execution failed");
+        }
       } finally {
         if (!isCancelled) {
           setIsLoading(false);
@@ -244,6 +250,33 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
         deviceInfo={deviceInfo}
       />
 
+      {analysisError && (
+        <div style={{
+          background: "#fef2f2",
+          borderBottom: "1px solid #fecaca",
+          padding: "10px 1.5rem",
+          color: "#dc2626",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontSize: "0.85rem",
+          fontWeight: 500,
+          zIndex: 40,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <AlertCircle size={18} style={{ flexShrink: 0 }} />
+            <span>{analysisError}</span>
+          </div>
+          <button
+            className="btn btn-secondary"
+            style={{ padding: "4px 10px", fontSize: "0.78rem", borderColor: "#fca5a5", color: "#b91c1c" }}
+            onClick={onBackToUpload}
+          >
+            Return to Download Models
+          </button>
+        </div>
+      )}
+
       {/* Analysis Studio Body */}
       <div className="analysis-body">
         {/* Collapsible Sidebar */}
@@ -281,6 +314,26 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
         {/* Main Studio Canvas & Results */}
         <main className="main-view">
           <div className="block-container">
+            {analysisError && (
+              <div
+                style={{
+                  padding: "0.75rem 1rem",
+                  background: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  borderRadius: 8,
+                  color: "#991b1b",
+                  marginBottom: "1rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: "0.85rem",
+                }}
+              >
+                <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                <span>{analysisError}</span>
+              </div>
+            )}
+
             {/* Gallery Navigation Toolbar: Extreme Left (Prev + Left Pages), Center (Name), Extreme Right (Right Pages + Next) */}
             <PaginationBar
               currentIndex={currentIndex}

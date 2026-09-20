@@ -11,6 +11,8 @@ import {
   RotateCcw,
   Cpu,
   Zap,
+  Trash2,
+  X,
 } from "lucide-react";
 import JSZip from "jszip";
 import { BrandLogo } from "../components/BrandLogo";
@@ -27,6 +29,7 @@ import {
   getModelsStatus,
   triggerModelDownload,
   getDownloadProgress,
+  deleteModel,
   setDevicePreference,
   getSamples,
   getSampleImageUrl,
@@ -54,6 +57,8 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
     current_file: "",
     detail: "",
   });
+  const [isDeletingModel, setIsDeletingModel] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
 
   // Staged upload images
   const [stagedImages, setStagedImages] = useState<LoadedImage[]>([]);
@@ -189,6 +194,24 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
     }
   };
 
+  // Delete one or all models
+  const handleDeleteModel = async (filename?: string) => {
+    setIsDeletingModel(filename || "all");
+    setLoadError(null);
+    try {
+      const res = await deleteModel(filename);
+      setAllDownloaded(res.all_downloaded);
+      setModelsList(res.models);
+      if (!res.all_downloaded) {
+        setShowDeleteModal(false);
+      }
+    } catch (e: any) {
+      alert(`Failed to delete model: ${e?.message || e}`);
+    } finally {
+      setIsDeletingModel(null);
+    }
+  };
+
   // Check readiness of model groups
   const isSamReady = useMemo(() => {
     if (allDownloaded) return true;
@@ -317,6 +340,14 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
       alert("Please upload at least 1 image first.");
       return;
     }
+    // Preflight verify models are downloaded
+    const modelsRes = await getModelsStatus().catch(() => null);
+    if (!modelsRes || !modelsRes.all_downloaded) {
+      setAllDownloaded(false);
+      if (modelsRes) setModelsList(modelsRes.models);
+      setLoadError("Process blocked: Foundation models are missing or deleted. You must download all models before proceeding.");
+      return;
+    }
     setIsProcessingUpload(true);
     setLoadError(null);
     try {
@@ -337,7 +368,14 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
       alert("No sample images available to launch. Please select at least 1 file.");
       return;
     }
-
+    // Preflight verify models are downloaded
+    const modelsRes = await getModelsStatus().catch(() => null);
+    if (!modelsRes || !modelsRes.all_downloaded) {
+      setAllDownloaded(false);
+      if (modelsRes) setModelsList(modelsRes.models);
+      setLoadError("Process blocked: Foundation models are missing or deleted. You must download all models before proceeding.");
+      return;
+    }
     setIsLoadingSamples(true);
     setLoadError(null);
     try {
@@ -404,16 +442,28 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                   <CheckCircle2 size={13} className="ready-icon" />
                   <span>Foundation Models Ready</span>
                 </div>
-                <button
-                  type="button"
-                  className="btn-redownload"
-                  onClick={() => handleStartDownload(true)}
-                  disabled={downloadProgress.is_downloading}
-                  title="Force re-download all model weights from Hugging Face"
-                >
-                  <RotateCcw size={12} className={downloadProgress.is_downloading ? "spin" : ""} />
-                  <span>{downloadProgress.is_downloading ? "Re-downloading..." : "Re-download"}</span>
-                </button>
+                <div className="models-header-actions">
+                  <button
+                    type="button"
+                    className="btn-redownload"
+                    onClick={() => handleStartDownload(true)}
+                    disabled={downloadProgress.is_downloading || !!isDeletingModel}
+                    title="Force re-download all model weights from Hugging Face"
+                  >
+                    <RotateCcw size={12} className={downloadProgress.is_downloading ? "spin" : ""} />
+                    <span>{downloadProgress.is_downloading ? "Re-downloading..." : "Re-download"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-delete-models"
+                    onClick={() => setShowDeleteModal(true)}
+                    disabled={downloadProgress.is_downloading || !!isDeletingModel}
+                    title="Manage and delete downloaded model weights"
+                  >
+                    <Trash2 size={12} />
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
 
               <div className="model-chips-row">
@@ -576,21 +626,32 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                         )}
                       </span>
                       {m.cached ? (
-                        <button
-                          type="button"
-                          className="btn-model-action"
-                          onClick={() => handleStartDownload(true, m.filename)}
-                          disabled={downloadProgress.is_downloading}
-                          title={`Re-download ${m.name}`}
-                        >
-                          <RotateCcw size={12} className={downloadProgress.is_downloading && downloadProgress.current_file.includes(m.name) ? "spin" : ""} />
-                        </button>
+                        <div style={{ display: "flex", gap: "5px" }}>
+                          <button
+                            type="button"
+                            className="btn-model-action"
+                            onClick={() => handleStartDownload(true, m.filename)}
+                            disabled={downloadProgress.is_downloading || !!isDeletingModel}
+                            title={`Re-download ${m.name}`}
+                          >
+                            <RotateCcw size={12} className={downloadProgress.is_downloading && downloadProgress.current_file.includes(m.name) ? "spin" : ""} />
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-model-action danger"
+                            onClick={() => handleDeleteModel(m.filename)}
+                            disabled={downloadProgress.is_downloading || isDeletingModel === m.filename}
+                            title={`Delete ${m.name}`}
+                          >
+                            <Trash2 size={12} className={isDeletingModel === m.filename ? "spin" : ""} />
+                          </button>
+                        </div>
                       ) : (
                         <button
                           type="button"
                           className="btn-model-action primary"
                           onClick={() => handleStartDownload(false, m.filename)}
-                          disabled={downloadProgress.is_downloading}
+                          disabled={downloadProgress.is_downloading || !!isDeletingModel}
                           title={`Download ${m.name}`}
                         >
                           <DownloadCloud size={12} className={downloadProgress.is_downloading && downloadProgress.current_file.includes(m.name) ? "spin" : ""} />
@@ -606,13 +667,35 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                   className="btn btn-primary btn-block"
                   style={{ padding: "12px" }}
                   onClick={() => handleStartDownload(false)}
-                  disabled={downloadProgress.is_downloading}
+                  disabled={downloadProgress.is_downloading || !!isDeletingModel}
                 >
                   <DownloadCloud size={18} />
                   {downloadProgress.is_downloading
                     ? "Downloading Weights..."
                     : "Download Foundation Models Now"}
                 </button>
+                {modelsList.some((m) => m.cached) && (
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-block"
+                    style={{
+                      marginTop: "0.6rem",
+                      padding: "9px",
+                      borderColor: "#fecaca",
+                      color: "#dc2626",
+                      fontSize: "0.8rem",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "6px",
+                    }}
+                    onClick={() => handleDeleteModel()}
+                    disabled={downloadProgress.is_downloading || !!isDeletingModel}
+                  >
+                    <Trash2 size={13} className={isDeletingModel === "all" ? "spin" : ""} />
+                    <span>{isDeletingModel === "all" ? "Deleting Downloaded Weights..." : "Delete All Downloaded Models"}</span>
+                  </button>
+                )}
               </div>
 
               {downloadProgress.is_downloading && (
@@ -816,6 +899,91 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
           )}
         </div>
       </div>
+
+      {/* Model Management Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <Trash2 size={16} style={{ color: "#ef4444" }} />
+                <h3 className="modal-title">Manage & Delete Foundation Models</h3>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowDeleteModal(false)}
+                title="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="modal-warning-box">
+                <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <strong>Mandatory Requirement: Processing requires models.</strong>
+                  <div style={{ marginTop: 3 }}>
+                    Deleting foundation models frees disk space (~720 MB). However, imagery upload and analysis cannot proceed until the models are downloaded again.
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-models-list">
+                {modelsList.map((m) => (
+                  <div key={m.filename} className="modal-model-item">
+                    <div>
+                      <div className="modal-model-name">{m.name}</div>
+                      <div className="modal-model-sub">
+                        <span>{m.task}</span>
+                        <span>•</span>
+                        <span>{m.size}</span>
+                      </div>
+                    </div>
+                    <div>
+                      {m.cached ? (
+                        <button
+                          type="button"
+                          className="btn-model-action danger"
+                          onClick={() => handleDeleteModel(m.filename)}
+                          disabled={!!isDeletingModel}
+                          title={`Delete ${m.name}`}
+                        >
+                          <Trash2 size={12} className={isDeletingModel === m.filename ? "spin" : ""} />
+                        </button>
+                      ) : (
+                        <span style={{ fontSize: "0.72rem", color: "var(--color-text-muted)" }}>Not Cached</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ padding: "8px 14px", fontSize: "0.8rem" }}
+                onClick={() => setShowDeleteModal(false)}
+                disabled={!!isDeletingModel}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-danger-solid"
+                onClick={() => handleDeleteModel()}
+                disabled={!!isDeletingModel}
+              >
+                <Trash2 size={14} className={isDeletingModel === "all" ? "spin" : ""} />
+                <span>{isDeletingModel === "all" ? "Deleting All Weights..." : "Delete All Models"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

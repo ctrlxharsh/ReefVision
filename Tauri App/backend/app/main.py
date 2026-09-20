@@ -30,6 +30,7 @@ from core.device import get_device_info, get_optimal_device
 from core.models import (
     check_models_download_status,
     download_all_models,
+    delete_model_weights,
     load_coralscop_model,
     load_bioclip_model,
     load_bleaching_model,
@@ -44,6 +45,8 @@ from app.schemas import (
     DevicePreferenceRequest,
     ModelStatusResponse,
     ModelDownloadRequest,
+    ModelDeleteRequest,
+    ModelDeleteResponse,
     SegmentRequest,
     EnrichRequest,
     OverlayRequest,
@@ -215,6 +218,37 @@ def trigger_model_download(
     return {"status": "started", "force": force}
 
 
+@app.post("/api/models/delete", response_model=ModelDeleteResponse)
+def delete_model_endpoint(req: Optional[ModelDeleteRequest] = None):
+    """Deletes one or all downloaded foundation models and frees disk space."""
+    target_files = None
+    if req and req.filename and not req.all:
+        target_files = [req.filename]
+
+    result = delete_model_weights(target_files=target_files)
+
+    # Invalidate in-memory inference caches
+    with _SEG_LOCKS_MUTEX:
+        _BASE_SEG_CACHE.clear()
+        _ENRICH_CACHE.clear()
+
+    return {
+        "status": "success",
+        "message": f"Successfully deleted {'all models' if (not req or req.all or not req.filename) else req.filename}",
+        "deleted_files": result["deleted_files"],
+        "freed_bytes": result["freed_bytes"],
+        "all_downloaded": result["all_downloaded"],
+        "models": result["models"],
+    }
+
+
+@app.delete("/api/models", response_model=ModelDeleteResponse)
+def delete_models_query(filename: Optional[str] = None):
+    """Query-param version of model deletion."""
+    req = ModelDeleteRequest(filename=filename, all=(filename is None))
+    return delete_model_endpoint(req)
+
+
 @app.get("/api/samples")
 def list_samples() -> List[Dict[str, Any]]:
     """Discovers available coral demo samples."""
@@ -290,6 +324,13 @@ def load_sample_to_store(payload: Dict[str, str]):
 @app.post("/api/analysis/segment")
 def segment_image(req: SegmentRequest):
     """Runs CoralSCOP SAM segmentation on a registered image."""
+    all_ready, _ = check_models_download_status()
+    if not all_ready:
+        raise HTTPException(
+            status_code=428,
+            detail="Foundation models are not downloaded or have been deleted. You must download all models before running segmentation.",
+        )
+
     img_name = req.image_name
     if img_name not in _IMAGE_STORE:
         # If image_base64 is provided in the request, register it automatically
@@ -344,6 +385,13 @@ def segment_image(req: SegmentRequest):
 @app.post("/api/analysis/enrich")
 def enrich_image(req: EnrichRequest):
     """Enriches filtered masks with BioCLIP taxonomy and NOAA bleaching detection."""
+    all_ready, _ = check_models_download_status()
+    if not all_ready:
+        raise HTTPException(
+            status_code=428,
+            detail="Foundation models are not downloaded or have been deleted. You must download all models before running taxonomy enrichment.",
+        )
+
     img_name = req.image_name
     if img_name not in _IMAGE_STORE:
         raise HTTPException(status_code=404, detail=f"Image '{img_name}' not loaded")

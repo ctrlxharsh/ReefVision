@@ -4,12 +4,14 @@ Model registry, artifact resolution, streaming download manager, and ONNX sessio
 
 import os
 import sys
+import shutil
 import threading
 from typing import Dict, List, Tuple, Any, Optional, Callable
 import numpy as np
 import onnxruntime as ort
 from tqdm.auto import tqdm
-from huggingface_hub import hf_hub_download, try_to_load_from_cache
+from huggingface_hub import hf_hub_download, try_to_load_from_cache, constants
+from huggingface_hub.file_download import repo_folder_name
 
 from core.device import get_optimal_device, get_device_mode, get_session_options
 
@@ -262,6 +264,145 @@ def download_all_models(
         downloaded_paths[fname] = path
         completed_bytes_prior += approx_sz
     return downloaded_paths
+
+
+def delete_model_weights(target_files: Optional[List[str]] = None) -> Dict[str, Any]:
+    """
+    Deletes specified local and cached Hugging Face model weights.
+    If target_files is None or contains all models, clears all cached weights and HF repo cache.
+    Releases all active in-memory ONNX Runtime sessions.
+    """
+    reset_cached_sessions()
+
+    specs = FOUNDATION_MODEL_SPECS
+    all_filenames = [s["filename"] for s in specs]
+
+    is_delete_all = False
+    if target_files is None:
+        is_delete_all = True
+        targets = list(all_filenames)
+    else:
+        targets = [f for f in target_files if f in all_filenames]
+        if set(targets) == set(all_filenames):
+            is_delete_all = True
+
+    deleted_files = []
+    freed_bytes = 0
+
+    # 1. Local candidate directories check and delete
+    for fname in targets:
+        candidates = [
+            os.path.join(os.path.dirname(__file__), "..", "onnx_models", fname),
+            os.path.join(os.path.dirname(__file__), "..", "models", fname),
+            os.path.join(os.path.dirname(__file__), "..", "..", "onnx_models", fname),
+            os.path.join(os.path.dirname(__file__), "..", "..", "Streamlit App", "onnx_models", fname),
+            os.path.join(os.path.dirname(__file__), "..", "..", "..", "Streamlit App", "onnx_models", fname),
+            os.path.join(os.getcwd(), "onnx_models", fname),
+            os.path.join(os.getcwd(), "models", fname),
+        ]
+        if getattr(sys, "frozen", False):
+            exec_dir = os.path.dirname(sys.executable)
+            candidates.insert(0, os.path.join(exec_dir, "models", fname))
+            candidates.insert(0, os.path.join(exec_dir, "onnx_models", fname))
+            if "Contents/MacOS" in exec_dir:
+                bundle_dir = os.path.abspath(os.path.join(exec_dir, "../../.."))
+                candidates.insert(0, os.path.join(bundle_dir, "models", fname))
+
+        for cand in candidates:
+            if os.path.isfile(cand):
+                try:
+                    sz = os.path.getsize(cand)
+                    os.remove(cand)
+                    deleted_files.append(cand)
+                    freed_bytes += sz
+                except OSError:
+                    pass
+
+    # 2. Hugging Face cache deletion
+    hf_cache_dir = getattr(constants, "HF_HUB_CACHE", os.path.expanduser("~/.cache/huggingface/hub"))
+    repo_folder = repo_folder_name(repo_id=HF_ONNX_REPO_ID, repo_type="model")
+    repo_cache_path = os.path.join(hf_cache_dir, repo_folder)
+
+    if is_delete_all:
+        if os.path.isdir(repo_cache_path):
+            try:
+                for root, _, files in os.walk(repo_cache_path):
+                    for f in files:
+                        fp = os.path.join(root, f)
+                        if not os.path.islink(fp):
+                            try:
+                                freed_bytes += os.path.getsize(fp)
+                            except OSError:
+                                pass
+                shutil.rmtree(repo_cache_path, ignore_errors=True)
+                deleted_files.append(repo_cache_path)
+            except Exception:
+                pass
+    else:
+        if os.path.isdir(repo_cache_path):
+            snapshots_dir = os.path.join(repo_cache_path, "snapshots")
+            if os.path.isdir(snapshots_dir):
+                for snap_name in os.listdir(snapshots_dir):
+                    snap_path = os.path.join(snapshots_dir, snap_name)
+                    if os.path.isdir(snap_path):
+                        for fname in targets:
+                            file_link = os.path.join(snap_path, fname)
+                            if os.path.islink(file_link) or os.path.isfile(file_link):
+                                if os.path.islink(file_link):
+                                    blob_target = os.path.realpath(file_link)
+                                    if os.path.isfile(blob_target):
+                                        try:
+                                            sz = os.path.getsize(blob_target)
+                                            os.remove(blob_target)
+                                            freed_bytes += sz
+                                            deleted_files.append(blob_target)
+                                        except OSError:
+                                            pass
+                                    try:
+                                        os.unlink(file_link)
+                                        deleted_files.append(file_link)
+                                    except OSError:
+                                        pass
+                                elif os.path.isfile(file_link):
+                                    try:
+                                        sz = os.path.getsize(file_link)
+                                        os.remove(file_link)
+                                        freed_bytes += sz
+                                        deleted_files.append(file_link)
+                                    except OSError:
+                                        pass
+
+            try:
+                from huggingface_hub import scan_cache_dir
+                cache_info = scan_cache_dir()
+                for repo in cache_info.repos:
+                    if repo.repo_id == HF_ONNX_REPO_ID:
+                        for rev in repo.revisions:
+                            for f in rev.files:
+                                if f.file_name in targets:
+                                    if os.path.islink(f.file_path) or os.path.isfile(f.file_path):
+                                        try:
+                                            os.remove(f.file_path)
+                                        except OSError:
+                                            pass
+                                    if os.path.isfile(f.blob_path):
+                                        try:
+                                            sz = os.path.getsize(f.blob_path)
+                                            os.remove(f.blob_path)
+                                            freed_bytes += sz
+                                            deleted_files.append(str(f.blob_path))
+                                        except OSError:
+                                            pass
+            except Exception:
+                pass
+
+    all_ready, status_list = check_models_download_status()
+    return {
+        "deleted_files": list(set(deleted_files)),
+        "freed_bytes": freed_bytes,
+        "all_downloaded": all_ready,
+        "models": status_list,
+    }
 
 
 def download_coralscop_checkpoint(cache_dir: Optional[str] = None) -> str:

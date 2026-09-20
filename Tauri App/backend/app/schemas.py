@@ -39,6 +39,20 @@ class ModelDownloadRequest(BaseModel):
     filename: Optional[str] = Field(default=None, description="Specific model filename or None for all models")
 
 
+class ModelDeleteRequest(BaseModel):
+    filename: Optional[str] = Field(default=None, description="Specific model filename to delete, or None to delete all")
+    all: bool = Field(default=False, description="Whether to delete all models")
+
+
+class ModelDeleteResponse(BaseModel):
+    status: str
+    message: str
+    deleted_files: List[str]
+    freed_bytes: int
+    all_downloaded: bool
+    models: List[ModelSpec]
+
+
 class SegmentRequest(BaseModel):
     image_name: str
     image_base64: Optional[str] = None
