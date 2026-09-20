@@ -67,16 +67,24 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   }
 
   return (
-    <div className="flex flex-col items-center justify-center text-center select-none mb-3 shrink-0">
-      <img
-        src={appIcon}
-        alt="Reef Vision Studio"
-        className="h-11 w-11 max-h-11 max-w-11 rounded-xl object-contain shadow-xs mb-1.5"
-      />
-      <h1 className="text-2xl sm:text-3xl font-black text-[#0f1e4a] tracking-tight">
-        Reef Vision Studio
-      </h1>
-      <p className="text-xs text-slate-500 mt-0.5 max-w-md leading-relaxed">
+    <div className="flex flex-col select-none mb-3">
+      <div className="flex items-center gap-3 mb-1.5">
+        <img
+          src={appIcon}
+          alt="Reef Vision Studio"
+          className="h-10 w-10 max-h-10 max-w-10 rounded-xl object-contain shadow-xs shrink-0"
+        />
+        <div>
+          <h1 className="text-xl font-black text-[#0f1e4a] tracking-tight leading-tight">
+            Reef Vision Studio
+          </h1>
+          <div className="text-[10px] font-bold tracking-wider text-[#0d7c85] uppercase flex items-center gap-0.5">
+            <span>Product by ANDROME!DA</span>
+            <span className="text-[8px] align-super">™</span>
+          </div>
+        </div>
+      </div>
+      <p className="text-[11px] text-slate-500 max-w-xs leading-snug">
         Autonomous multi-model coral reef instance segmentation, taxonomy, and condition assessment.
       </p>
     </div>
