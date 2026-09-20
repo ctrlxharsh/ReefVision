@@ -10,60 +10,43 @@ interface MetricCardsProps {
   isLoading?: boolean;
 }
 
-export const MetricCards: React.FC<MetricCardsProps> = ({
-  stats,
-  isLoading = false,
-}) => {
+export const MetricCards: React.FC<MetricCardsProps> = ({ stats, isLoading = false }) => {
   const cards = [
     {
       id: "corals",
       title: "Corals Detected",
-      value: stats.total_corals_detected,
+      val: stats.total_corals_detected,
       icon: Target,
-      iconBg: "bg-teal-50 text-[#0d7c85]",
-      subtext: isLoading
-        ? "Analyzing seabed..."
-        : stats.total_corals_detected > 0
-        ? "Instances Identified"
-        : "No Corals Found",
-      badgeVariant: "coral" as const,
+      bg: "bg-teal-50 text-[#0d7c85]",
+      sub: isLoading ? "Analyzing..." : stats.total_corals_detected > 0 ? "Instances Identified" : "No Corals",
+      badge: "coral" as const,
     },
     {
       id: "coverage",
       title: "Reef Coverage",
-      value: `${stats.coral_coverage_pct}%`,
+      val: `${stats.coral_coverage_pct}%`,
       icon: Waves,
-      iconBg: "bg-emerald-50 text-emerald-600",
-      subtext: isLoading
-        ? "Calculating area..."
-        : `${stats.coral_covered_pixels.toLocaleString("en-US")} px total`,
-      badgeVariant: "success" as const,
+      bg: "bg-emerald-50 text-emerald-600",
+      sub: isLoading ? "Calculating..." : `${stats.coral_covered_pixels.toLocaleString("en-US")} px total`,
+      badge: "success" as const,
     },
     {
       id: "iou",
       title: "Avg IoU Confidence",
-      value: stats.mean_iou_confidence.toFixed(3),
+      val: stats.mean_iou_confidence.toFixed(3),
       icon: Crosshair,
-      iconBg: "bg-sky-50 text-sky-600",
-      subtext: isLoading
-        ? "Evaluating fidelity..."
-        : stats.mean_iou_confidence >= 0.7
-        ? "High Fidelity"
-        : "Standard Precision",
-      badgeVariant: "info" as const,
+      bg: "bg-sky-50 text-sky-600",
+      sub: isLoading ? "Evaluating..." : stats.mean_iou_confidence >= 0.7 ? "High Fidelity" : "Standard Precision",
+      badge: "info" as const,
     },
     {
       id: "stability",
       title: "Avg Stability Score",
-      value: stats.mean_stability_score.toFixed(3),
+      val: stats.mean_stability_score.toFixed(3),
       icon: ShieldCheck,
-      iconBg: "bg-indigo-50 text-indigo-600",
-      subtext: isLoading
-        ? "Validating bounds..."
-        : stats.mean_stability_score >= 0.8
-        ? "Reliable Mask Bounds"
-        : "Boundary Evaluated",
-      badgeVariant: "secondary" as const,
+      bg: "bg-indigo-50 text-indigo-600",
+      sub: isLoading ? "Validating..." : stats.mean_stability_score >= 0.8 ? "Reliable Bounds" : "Evaluated",
+      badge: "secondary" as const,
     },
   ];
 
@@ -72,32 +55,20 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       {cards.map((c) => {
         const Icon = c.icon;
         return (
-          <Card
-            key={c.id}
-            className="border-slate-200 bg-white shadow-xs hover:shadow-sm transition-shadow flex flex-col justify-between"
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-4 px-4">
-              <CardTitle className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                {c.title}
-              </CardTitle>
-              <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${c.iconBg}`}>
+          <Card key={c.id} className="border-slate-200 bg-white shadow-xs hover:shadow-sm transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
+              <CardTitle className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{c.title}</CardTitle>
+              <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${c.bg}`}>
                 <Icon className="h-4 w-4" />
               </div>
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <div className="text-2xl font-bold font-mono tracking-tight text-[#0f1e4a]">
-                {isLoading ? (
-                  <ThreeDotsLoader size="sm" color="#0d7c85" />
-                ) : (
-                  c.value
-                )}
+                {isLoading ? <ThreeDotsLoader size="sm" color="#0d7c85" /> : c.val}
               </div>
               <div className="mt-2 flex items-center">
-                <Badge
-                  variant={c.badgeVariant}
-                  className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-                >
-                  {c.subtext}
+                <Badge variant={c.badge} className="text-[10px] font-medium px-2 py-0.5 rounded-full">
+                  {c.sub}
                 </Badge>
               </div>
             </CardContent>
