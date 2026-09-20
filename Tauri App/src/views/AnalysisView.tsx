@@ -244,21 +244,21 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
   }, [images.length]);
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-50/40">
+    <div className="flex flex-col h-screen w-full overflow-hidden bg-background">
       {/* Top Bar: Back, Andromeida Branding, Hardware Device */}
       <TopBar onBack={onBackToUpload} deviceInfo={deviceInfo} />
 
       {analysisError && (
-        <div className="flex items-center justify-between px-6 py-2.5 bg-red-50 border-b border-red-200 text-red-700 text-xs font-medium z-40">
+        <div className="flex items-center justify-between px-6 py-2.5 bg-destructive/10 border-b border-destructive/20 text-destructive text-xs font-medium z-40">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+            <AlertCircle className="size-4 shrink-0 text-destructive" />
             <span>{analysisError}</span>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={onBackToUpload}
-            className="h-7 px-2.5 text-xs border-red-200 text-red-700 hover:bg-red-100/60"
+            className="h-7 px-2.5 text-xs border-destructive/30 text-destructive hover:bg-destructive/15"
           >
             Return to Download Models
           </Button>
@@ -299,9 +299,9 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
           onDevicePreferenceChange={handleDeviceChange}
         />
 
-        {/* Main Studio Canvas & Results with Guaranteed 24px (space-y-6) Rhythm */}
-        <main className="flex-1 h-full overflow-y-auto min-h-0 bg-slate-50/50">
-          <div className="max-w-7xl mx-auto w-full p-6 flex flex-col gap-6">
+        {/* Main Studio Canvas & Results with Natural Rhythm */}
+        <main className="flex-1 h-full overflow-y-auto min-h-0 bg-muted/20">
+          <div className="max-w-7xl mx-auto w-full p-6 lg:p-8 flex flex-col gap-6">
             {/* Gallery Navigation Toolbar */}
             <PaginationBar
               currentIndex={currentIndex}

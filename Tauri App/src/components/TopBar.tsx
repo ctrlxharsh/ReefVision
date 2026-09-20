@@ -21,18 +21,18 @@ export const TopBar: React.FC<TopBarProps> = ({ onBack, deviceInfo }) => {
     deviceInfo?.active_provider?.includes("CUDA");
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 w-full shrink-0 items-center justify-between border-b border-border bg-white px-5 shadow-xs">
+    <header className="sticky top-0 z-30 flex h-14 w-full shrink-0 items-center justify-between border-b border-border bg-card/80 backdrop-blur-md px-6 shadow-xs">
       {/* Left: Back to Selection */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           onClick={onBack}
           title="Return to image library"
-          className="h-8 gap-2 text-xs font-semibold text-slate-700 hover:text-[#0d7c85] hover:border-[#0d7c85] hover:bg-teal-50/40 transition-colors"
+          className="h-8 gap-2 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Back to Selection</span>
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Library</span>
         </Button>
       </div>
 
@@ -42,18 +42,21 @@ export const TopBar: React.FC<TopBarProps> = ({ onBack, deviceInfo }) => {
       </div>
 
       {/* Right: Hardware Acceleration Badge */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 shrink-0">
         {deviceInfo && (
           <Badge
             variant="outline"
-            className="h-8 gap-2 px-3 py-1 font-mono text-[11px] font-medium text-slate-700 bg-slate-50/60 border-slate-200"
+            className="h-8 gap-2 px-3 py-1 font-mono text-xs font-medium text-foreground bg-muted/50 border-border/80"
             title={`Active Provider: ${deviceInfo.active_provider}`}
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
             {isGpu ? (
               <Zap className="h-3.5 w-3.5 text-amber-500" />
             ) : (
-              <Cpu className="h-3.5 w-3.5 text-[#0d7c85]" />
+              <Cpu className="h-3.5 w-3.5 text-primary" />
             )}
             <span>
               {deviceInfo.active_provider.includes("CUDA")

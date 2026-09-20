@@ -46,56 +46,95 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
 
   const isSideBySide = layoutMode === "Side-by-Side";
   const showOriginal = isSideBySide || layoutMode === "Original Only";
-  const showOverlay = isSideBySide || layoutMode === "Overlay Only" || layoutMode === "Masks on Black";
+  const showOverlay =
+    isSideBySide || layoutMode === "Overlay Only" || layoutMode === "Masks on Black";
   const isDarkBg = layoutMode === "Masks on Black";
 
-  const renderFrame = (title: string, badge: string, src: string | null, isDark: boolean, onOpen: () => void, isOverlay: boolean) => (
-    <Card className="overflow-hidden border-slate-200/90 bg-white shadow-xs rounded-xl flex flex-col group transition-shadow hover:shadow-sm">
-      <CardHeader className="py-2.5 px-4 flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/60">
-        <CardTitle className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-          <ImageIcon className="h-3.5 w-3.5 text-[#0d7c85]" />
+  const renderFrame = (
+    title: string,
+    badge: string,
+    src: string | null,
+    isDark: boolean,
+    onOpen: () => void,
+    isOverlay: boolean
+  ) => (
+    <Card className="overflow-hidden border-border/80 bg-card shadow-sm rounded-xl flex flex-col group transition-all duration-200 hover:shadow-md">
+      <CardHeader className="py-3 px-5 flex flex-row items-center justify-between border-b border-border/70 bg-card">
+        <CardTitle className="text-xs font-semibold uppercase tracking-wider text-foreground flex items-center gap-2">
+          <ImageIcon className="h-4 w-4 text-primary" />
           <span>{title}</span>
         </CardTitle>
-        <Badge variant={isOverlay ? "coral" : "outline"} className="text-[10px] font-mono font-semibold uppercase px-2 py-0">
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-[10px] font-mono font-semibold uppercase px-2.5 py-0.5",
+            isOverlay
+              ? "bg-primary/10 text-primary border-primary/25"
+              : "bg-muted/70 text-muted-foreground border-border/80"
+          )}
+        >
           {badge}
         </Badge>
       </CardHeader>
-      <CardContent className={cn("p-0 relative flex items-center justify-center min-h-[360px] max-h-[520px] overflow-hidden select-none", isDark ? "bg-slate-950" : "bg-slate-950/[0.03]")}>
+      <CardContent
+        className={cn(
+          "p-0 relative flex items-center justify-center min-h-[380px] max-h-[540px] overflow-hidden select-none transition-colors",
+          isDark
+            ? "bg-slate-950"
+            : "bg-slate-900/[0.03] border-inner"
+        )}
+      >
         {src ? (
           <>
             <img
               src={src}
               alt={title}
-              className={cn("max-h-[520px] w-auto max-w-full object-contain cursor-pointer transition-opacity duration-200", isLoading ? "opacity-30" : "opacity-100")}
+              className={cn(
+                "max-h-[540px] w-auto max-w-full object-contain cursor-pointer transition-opacity duration-300 p-2",
+                isLoading && isOverlay ? "opacity-25 blur-[1px]" : "opacity-100"
+              )}
               onClick={onOpen}
             />
             <Button
               type="button"
               variant="secondary"
               size="sm"
-              onClick={(e) => { e.stopPropagation(); onOpen(); }}
-              className="absolute top-3 right-3 h-7 px-2.5 text-xs font-medium gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-150 bg-white/95 hover:bg-white text-slate-700 border border-slate-200/80 shadow-sm rounded-md"
-              title="Fullscreen"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpen();
+              }}
+              className="absolute top-3 right-3 h-8 px-3 text-xs font-medium gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-card/90 hover:bg-card text-foreground border border-border shadow-sm backdrop-blur-xs rounded-lg"
+              title="Inspect Fullscreen"
             >
-              <Maximize2 className="h-3.5 w-3.5 text-[#0d7c85]" />
+              <Maximize2 className="h-3.5 w-3.5 text-primary" />
               <span>Fullscreen</span>
             </Button>
           </>
         ) : (
-          <div className="text-xs text-slate-400 font-medium py-20">No Imagery Available</div>
+          <div className="text-xs text-muted-foreground font-medium py-24">
+            No Imagery Available
+          </div>
         )}
 
         {isLoading && isOverlay && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-white/85 backdrop-blur-xs text-center z-20">
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-card/85 backdrop-blur-xs text-center z-20 animate-fade-in">
             <ThreeDotsLoader size="lg" color="#0d7c85" />
-            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-[#0d7c85] font-mono text-xs font-bold">
+            <div className="mt-4 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary font-mono text-xs font-semibold shadow-xs">
               <Sparkles className="h-3.5 w-3.5" />
               <span>
-                {analysisStage === "classifying" ? "Step 2 of 3 • Taxonomy & Health" : analysisStage === "rendering" ? "Step 3 of 3 • Overlay Synthesis" : "Step 1 of 3 • Segmentation"}
+                {analysisStage === "classifying"
+                  ? "Step 2 of 3 • Taxonomy & Condition"
+                  : analysisStage === "rendering"
+                  ? "Step 3 of 3 • Synthesis & Rendering"
+                  : "Step 1 of 3 • Colony Segmentation"}
               </span>
             </div>
-            <div className="mt-2 text-sm font-bold text-[#0f1e4a]">
-              {analysisStage === "classifying" ? "Classifying Coral Taxa..." : analysisStage === "rendering" ? "Synthesizing Coral Map..." : "Segmenting Colonies..."}
+            <div className="mt-2 text-sm font-semibold text-foreground">
+              {analysisStage === "classifying"
+                ? "Classifying Coral Taxa (BioCLIP & YOLO11)..."
+                : analysisStage === "rendering"
+                ? "Synthesizing Spatial Masks & Telemetry..."
+                : "Segmenting Colonies (SAM ViT-B)..."}
             </div>
           </div>
         )}
@@ -105,16 +144,32 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({
 
   return (
     <div className="w-full">
-      <div className={cn("grid gap-4", isSideBySide ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1")}>
-        {showOriginal && renderFrame("Original Image", "SOURCE", originalSrc, false, () => openModal("primary"), false)}
-        {showOverlay && renderFrame(
-          layoutMode === "Masks on Black" ? "Isolated Coral Masks" : "Segmentation Overlay",
-          layoutMode === "Masks on Black" ? "MASKS" : getBadgeLabel(),
-          overlaySrc || originalSrc,
-          isDarkBg,
-          () => openModal(overlaySrc ? "secondary" : "primary"),
-          true
+      <div
+        className={cn(
+          "grid gap-5",
+          isSideBySide ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
         )}
+      >
+        {showOriginal &&
+          renderFrame(
+            "Original Image",
+            "SOURCE",
+            originalSrc,
+            false,
+            () => openModal("primary"),
+            false
+          )}
+        {showOverlay &&
+          renderFrame(
+            layoutMode === "Masks on Black"
+              ? "Isolated Coral Masks"
+              : "Segmentation Overlay",
+            layoutMode === "Masks on Black" ? "MASKS" : getBadgeLabel(),
+            overlaySrc || originalSrc,
+            isDarkBg,
+            () => openModal(overlaySrc ? "secondary" : "primary"),
+            true
+          )}
       </div>
 
       <ImageLightboxModal

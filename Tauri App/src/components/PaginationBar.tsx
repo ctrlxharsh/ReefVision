@@ -1,7 +1,6 @@
 import React from "react";
 import { ChevronLeft, ChevronRight, FileImage } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 interface PaginationBarProps {
   currentIndex: number;
@@ -34,43 +33,51 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
   };
 
   return (
-    <nav className="flex flex-col sm:flex-row items-center justify-between w-full gap-3 py-1 select-none" aria-label="Pagination">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onPrev}
-        disabled={currentIndex === 0}
-        className="h-8 gap-1.5 text-xs font-semibold text-slate-700 hover:text-[#0d7c85] bg-white border-slate-200 shadow-xs"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        <span>Previous</span>
-      </Button>
+    <div
+      className="flex flex-col sm:flex-row items-center justify-between w-full gap-3 px-4 py-2 rounded-xl border border-border/80 bg-card shadow-xs select-none"
+      aria-label="Gallery Navigation"
+    >
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onPrev}
+          disabled={currentIndex === 0}
+          className="h-8 gap-1.5 px-3 text-xs font-medium"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+          <span>Previous</span>
+        </Button>
+      </div>
 
-      <Badge variant="outline" className="h-8 px-3.5 gap-2 bg-white text-xs border-slate-200 shadow-xs max-w-full">
-        <FileImage className="h-3.5 w-3.5 text-[#0d7c85] shrink-0" />
-        <span className="font-mono font-semibold text-[#0f1e4a] truncate max-w-[260px]" title={currentImageName}>
+      <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-muted/60 border border-border/60 max-w-full">
+        <FileImage className="h-3.5 w-3.5 text-primary shrink-0" />
+        <span
+          className="font-mono text-xs font-medium text-foreground truncate max-w-[280px]"
+          title={currentImageName}
+        >
           {currentImageName}
         </span>
-        <span className="text-slate-300">•</span>
-        <span className="text-slate-500 font-medium shrink-0">
-          Image <strong className="text-[#0d7c85]">{currentIndex + 1}</strong> of {totalImages}
+        <span className="text-muted-foreground/40">•</span>
+        <span className="text-xs text-muted-foreground font-medium shrink-0">
+          <strong className="text-foreground font-semibold">{currentIndex + 1}</strong> of {totalImages}
         </span>
-      </Badge>
+      </div>
 
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1">
           {getPages().map((p, idx) =>
             p === "ellipsis" ? (
-              <span key={`el-${idx}`} className="px-1 text-xs text-slate-400 select-none font-mono">•••</span>
+              <span key={`el-${idx}`} className="px-1 text-xs text-muted-foreground select-none font-mono">
+                •••
+              </span>
             ) : (
               <Button
                 key={p}
-                variant={p === currentIndex ? "default" : "outline"}
+                variant={p === currentIndex ? "default" : "ghost"}
                 size="sm"
                 onClick={() => onSelectPage(p)}
-                className={`h-8 w-8 p-0 font-mono text-xs font-semibold ${
-                  p === currentIndex ? "bg-[#0d7c85] text-white hover:bg-[#0d7c85]/90" : "bg-white text-slate-600"
-                }`}
+                className="h-8 w-8 p-0 font-mono text-xs font-semibold rounded-md"
               >
                 {p + 1}
               </Button>
@@ -83,12 +90,12 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
           size="sm"
           onClick={onNext}
           disabled={currentIndex >= totalImages - 1}
-          className="h-8 gap-1.5 text-xs font-semibold text-slate-700 hover:text-[#0d7c85] bg-white border-slate-200 shadow-xs"
+          className="h-8 gap-1.5 px-3 text-xs font-medium"
         >
           <span>Next</span>
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-3.5 w-3.5" />
         </Button>
       </div>
-    </nav>
+    </div>
   );
 };

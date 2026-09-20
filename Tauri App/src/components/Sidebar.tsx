@@ -1,13 +1,32 @@
 import React from "react";
-import { Sliders, Palette, Cpu, Minus, Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import {
+  Sliders,
+  Palette,
+  Cpu,
+  Minus,
+  Plus,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { InfoTooltip } from "./InfoTooltip";
 import { DeviceInfo, CoralSegment } from "../types";
 
@@ -42,7 +61,13 @@ interface SidebarProps {
   onDevicePreferenceChange: (val: string) => void;
 }
 
-const LAYOUT_OPTIONS = ["Side-by-Side", "Overlay Only", "Original Only", "Masks on Black"];
+const LAYOUT_OPTIONS = [
+  { id: "Side-by-Side", label: "Side by Side" },
+  { id: "Overlay Only", label: "Overlay" },
+  { id: "Original Only", label: "Original" },
+  { id: "Masks on Black", label: "Masks on Black" },
+];
+
 const COLOR_MODES = [
   { id: "instances", label: "Colony Instances", dot: "bg-[#0d7c85]" },
   { id: "bleaching", label: "Health Condition", dot: "bg-emerald-500" },
@@ -87,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         size="icon"
         onClick={onToggleCollapse}
         title="Open Analysis Controls"
-        className="fixed top-16 left-4 z-40 h-9 w-9 rounded-lg bg-white shadow-md border-slate-200 text-slate-700 hover:text-[#0d7c85]"
+        className="fixed top-16 left-4 z-40 h-9 w-9 rounded-lg bg-card shadow-md border-border text-foreground hover:text-primary"
       >
         <PanelLeftOpen className="h-4 w-4" />
       </Button>
@@ -95,50 +120,81 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   const inferenceSliders = [
-    { label: "Grid Density", value: pointsPerSide, min: 8, max: 36, step: 4, onChange: onPointsPerSideChange, format: (v: number) => `${v}`, tip: "Density of input prompt points sampled across the image grid." },
-    { label: "IoU Threshold", value: iouThresh, min: 0.2, max: 0.98, step: 0.02, onChange: onIouThreshChange, format: (v: number) => v.toFixed(2), tip: "Cutoff for predicted Intersection-over-Union quality." },
-    { label: "Stability Threshold", value: stabilityThresh, min: 0.2, max: 0.99, step: 0.01, onChange: onStabilityThreshChange, format: (v: number) => v.toFixed(2), tip: "Filters masks with unstable boundaries across binarization thresholds." },
+    {
+      label: "Grid Density",
+      value: pointsPerSide,
+      min: 8,
+      max: 36,
+      step: 4,
+      onChange: onPointsPerSideChange,
+      format: (v: number) => `${v}`,
+      tip: "Density of input prompt points sampled across the image grid.",
+    },
+    {
+      label: "IoU Threshold",
+      value: iouThresh,
+      min: 0.2,
+      max: 0.98,
+      step: 0.02,
+      onChange: onIouThreshChange,
+      format: (v: number) => v.toFixed(2),
+      tip: "Cutoff for predicted Intersection-over-Union quality.",
+    },
+    {
+      label: "Stability Threshold",
+      value: stabilityThresh,
+      min: 0.2,
+      max: 0.99,
+      step: 0.01,
+      onChange: onStabilityThreshChange,
+      format: (v: number) => v.toFixed(2),
+      tip: "Filters masks with unstable boundaries across binarization thresholds.",
+    },
   ];
 
   return (
-    <aside className="w-80 shrink-0 h-full border-r border-slate-200 bg-slate-50/50 flex flex-col select-none">
+    <aside className="w-80 shrink-0 h-full border-r border-border bg-card/60 flex flex-col select-none">
       {/* Header */}
-      <div className="flex h-12 items-center justify-between border-b border-slate-200/80 px-4 shrink-0 bg-white">
-        <div className="flex items-center gap-2 font-bold text-xs uppercase tracking-wider text-[#0f1e4a]">
-          <Sliders className="h-4 w-4 text-[#0d7c85]" />
+      <div className="flex h-14 items-center justify-between border-b border-border px-5 shrink-0 bg-card">
+        <div className="flex items-center gap-2.5 font-semibold text-xs uppercase tracking-wider text-foreground">
+          <Sliders className="h-4 w-4 text-primary" />
           <span>Analysis Controls</span>
         </div>
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggleCollapse}
-          className="h-7 w-7 text-slate-400 hover:text-slate-700"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
           title="Collapse sidebar"
         >
           <PanelLeftClose className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Accordion Controls */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 text-xs">
-        <Accordion type="multiple" defaultValue={["params", "display", "hardware"]} className="w-full">
+      {/* Accordion Controls with generous padding and clear hierarchy */}
+      <div className="flex-1 overflow-y-auto px-5 py-3 text-xs">
+        <Accordion
+          type="multiple"
+          defaultValue={["params", "display", "hardware"]}
+          className="w-full flex flex-col gap-1"
+        >
           {/* 1. Inference Parameters */}
-          <AccordionItem value="params" className="border-b border-border">
-            <AccordionTrigger className="py-3 text-xs font-semibold text-slate-800 hover:text-[#0d7c85]">
+          <AccordionItem value="params" className="border-b border-border/80">
+            <AccordionTrigger className="py-3.5 text-xs font-semibold text-foreground hover:text-primary transition-colors">
               <div className="flex items-center gap-2">
-                <Sliders className="h-3.5 w-3.5 text-[#0d7c85]" />
+                <Sliders className="h-3.5 w-3.5 text-primary" />
                 <span>Inference Parameters</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="flex flex-col gap-4 pt-1 pb-4">
+            <AccordionContent className="flex flex-col gap-4.5 pt-1 pb-5">
               {inferenceSliders.map((s) => (
-                <div key={s.label} className="flex flex-col gap-1.5">
+                <div key={s.label} className="flex flex-col gap-2">
                   <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                    <div className="flex items-center gap-1.5 font-medium text-foreground">
                       <span>{s.label}</span>
                       <InfoTooltip content={s.tip} />
                     </div>
-                    <span className="font-mono text-[11px] font-semibold text-[#0d7c85] bg-teal-50 px-1.5 py-0.5 rounded">
+                    <span className="font-mono text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
                       {s.format(s.value)}
                     </span>
                   </div>
@@ -148,25 +204,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     step={s.step}
                     value={[s.value]}
                     onValueChange={(vals) => s.onChange(vals[0])}
+                    className="py-1"
                   />
                 </div>
               ))}
 
               {/* Min Mask Area */}
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-1.5 font-medium text-slate-700">
+                  <div className="flex items-center gap-1.5 font-medium text-foreground">
                     <span>Min Mask Area</span>
                     <InfoTooltip content="Minimum pixel count threshold for detected corals." />
                   </div>
-                  <span className="font-mono text-[11px] font-semibold text-slate-600">{minAreaPx} px</span>
+                  <span className="font-mono text-xs font-semibold text-muted-foreground">
+                    {minAreaPx.toLocaleString("en-US")} px
+                  </span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center rounded-lg border border-input bg-background shadow-xs overflow-hidden">
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="h-8 w-8 shrink-0 text-slate-600"
+                    className="h-8 w-9 shrink-0 text-muted-foreground hover:text-foreground rounded-none"
                     onClick={() => onMinAreaPxChange(Math.max(10, minAreaPx - 50))}
                   >
                     <Minus className="h-3.5 w-3.5" />
@@ -181,13 +240,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       const v = parseInt(e.target.value, 10);
                       if (!isNaN(v)) onMinAreaPxChange(Math.max(10, Math.min(50000, v)));
                     }}
-                    className="h-8 text-center font-mono text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-8 border-0 shadow-none text-center font-mono text-xs focus-visible:ring-0 rounded-none bg-transparent"
                   />
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
-                    className="h-8 w-8 shrink-0 text-slate-600"
+                    className="h-8 w-9 shrink-0 text-muted-foreground hover:text-foreground rounded-none"
                     onClick={() => onMinAreaPxChange(Math.min(50000, minAreaPx + 50))}
                   >
                     <Plus className="h-3.5 w-3.5" />
@@ -198,44 +257,63 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </AccordionItem>
 
           {/* 2. Display Controls */}
-          <AccordionItem value="display" className="border-b border-border">
-            <AccordionTrigger className="py-3 text-xs font-semibold text-slate-800 hover:text-[#0d7c85]">
+          <AccordionItem value="display" className="border-b border-border/80">
+            <AccordionTrigger className="py-3.5 text-xs font-semibold text-foreground hover:text-primary transition-colors">
               <div className="flex items-center gap-2">
-                <Palette className="h-3.5 w-3.5 text-[#0d7c85]" />
+                <Palette className="h-3.5 w-3.5 text-primary" />
                 <span>Display Controls</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="flex flex-col gap-4 pt-1 pb-4">
+            <AccordionContent className="flex flex-col gap-4.5 pt-1 pb-5">
               {/* Layout Mode */}
               <div className="flex flex-col gap-2">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Layout</div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {LAYOUT_OPTIONS.map((id) => (
-                    <Button
-                      key={id}
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  View Layout
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-lg bg-muted/60 border border-border/60">
+                  {LAYOUT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
                       type="button"
-                      variant={layoutMode === id ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => onLayoutModeChange(id)}
-                      className={`h-7 px-2 text-[11px] font-medium ${
-                        layoutMode === id ? "bg-[#0d7c85] text-white hover:bg-[#0d7c85]/90" : "bg-white text-slate-600"
+                      onClick={() => onLayoutModeChange(opt.id)}
+                      className={`h-8 px-2 rounded-md text-xs font-medium transition-all ${
+                        layoutMode === opt.id
+                          ? "bg-card text-foreground shadow-xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      {id.replace(" Only", "")}
-                    </Button>
+                      {opt.label}
+                    </button>
                   ))}
                 </div>
               </div>
 
               {/* Color Mode */}
               <div className="flex flex-col gap-2">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Color Mode</div>
-                <RadioGroup value={colorMode} onValueChange={onColorModeChange} className="flex flex-col gap-2">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Color Mode
+                </div>
+                <RadioGroup
+                  value={colorMode}
+                  onValueChange={onColorModeChange}
+                  className="flex flex-col gap-2"
+                >
                   {COLOR_MODES.map((m) => (
-                    <div key={m.id} className="flex items-center space-x-2">
+                    <div
+                      key={m.id}
+                      className={`flex items-center space-x-2.5 px-2.5 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                        colorMode === m.id
+                          ? "bg-primary/5 border-primary/30"
+                          : "border-transparent hover:bg-muted/50"
+                      }`}
+                      onClick={() => onColorModeChange(m.id)}
+                    >
                       <RadioGroupItem value={m.id} id={`color-${m.id}`} />
-                      <Label htmlFor={`color-${m.id}`} className="text-xs font-medium text-slate-700 cursor-pointer flex items-center gap-1.5">
-                        <span className={`h-2 w-2 rounded-full ${m.dot}`} />
+                      <Label
+                        htmlFor={`color-${m.id}`}
+                        className="text-xs font-medium text-foreground cursor-pointer flex items-center gap-2"
+                      >
+                        <span className={`h-2.5 w-2.5 rounded-full ${m.dot}`} />
                         <span>{m.label}</span>
                       </Label>
                     </div>
@@ -244,50 +322,79 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               {/* Overlay Opacity */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-xs font-medium text-slate-700">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-xs font-medium text-foreground">
                   <span>Overlay Opacity</span>
-                  <span className="font-mono text-[11px] font-semibold text-[#0d7c85] bg-teal-50 px-1.5 py-0.5 rounded">
+                  <span className="font-mono text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-md">
                     {alpha.toFixed(2)}
                   </span>
                 </div>
-                <Slider min={0.05} max={1.0} step={0.05} value={[alpha]} onValueChange={(vals) => onAlphaChange(vals[0])} />
+                <Slider
+                  min={0.05}
+                  max={1.0}
+                  step={0.05}
+                  value={[alpha]}
+                  onValueChange={(vals) => onAlphaChange(vals[0])}
+                  className="py-1"
+                />
               </div>
 
               {/* Annotations */}
               <div className="flex flex-col gap-2">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Annotations</div>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Annotations
+                </div>
+                <div className="grid grid-cols-2 gap-2">
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="ann-borders" checked={drawContours} onCheckedChange={(c) => onDrawContoursChange(!!c)} />
-                    <Label htmlFor="ann-borders" className="text-xs font-normal text-slate-700 cursor-pointer">Borders</Label>
+                    <Checkbox
+                      id="ann-borders"
+                      checked={drawContours}
+                      onCheckedChange={(c) => onDrawContoursChange(!!c)}
+                    />
+                    <Label htmlFor="ann-borders" className="text-xs font-medium text-foreground cursor-pointer">
+                      Borders
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox id="ann-labels" checked={drawLabels} onCheckedChange={(c) => onDrawLabelsChange(!!c)} />
-                    <Label htmlFor="ann-labels" className="text-xs font-normal text-slate-700 cursor-pointer">ID Badges</Label>
+                    <Checkbox
+                      id="ann-labels"
+                      checked={drawLabels}
+                      onCheckedChange={(c) => onDrawLabelsChange(!!c)}
+                    />
+                    <Label htmlFor="ann-labels" className="text-xs font-medium text-foreground cursor-pointer">
+                      ID Badges
+                    </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="ann-boxes" checked={drawBoxes} onCheckedChange={(c) => onDrawBoxesChange(!!c)} />
-                    <Label htmlFor="ann-boxes" className="text-xs font-normal text-slate-700 cursor-pointer">Bounding Boxes</Label>
+                  <div className="flex items-center space-x-2 col-span-2">
+                    <Checkbox
+                      id="ann-boxes"
+                      checked={drawBoxes}
+                      onCheckedChange={(c) => onDrawBoxesChange(!!c)}
+                    />
+                    <Label htmlFor="ann-boxes" className="text-xs font-medium text-foreground cursor-pointer">
+                      Bounding Boxes
+                    </Label>
                   </div>
                 </div>
               </div>
 
               {/* Highlight Coral */}
-              <div className="flex flex-col gap-1.5">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Highlight Coral</div>
+              <div className="flex flex-col gap-2">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Filter / Highlight Coral
+                </div>
                 <Select
                   value={selectedMaskId !== null ? String(selectedMaskId) : "all"}
                   onValueChange={(val) => onSelectMaskId(val === "all" ? null : parseInt(val, 10))}
                 >
-                  <SelectTrigger className="h-8 text-xs bg-white">
+                  <SelectTrigger className="h-9 text-xs bg-background">
                     <SelectValue placeholder="All Corals" />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value="all">All Corals</SelectItem>
                     {segments.map((s) => (
                       <SelectItem key={s.id} value={String(s.id)}>
-                        Coral #{s.id} [{s.genus}] ({s.condition}, {s.area_pct}%)
+                        Coral #{s.id} [{s.genus}] ({s.condition})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -298,17 +405,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* 3. Compute Engine */}
           <AccordionItem value="hardware" className="border-b-0">
-            <AccordionTrigger className="py-3 text-xs font-semibold text-slate-800 hover:text-[#0d7c85]">
+            <AccordionTrigger className="py-3.5 text-xs font-semibold text-foreground hover:text-primary transition-colors">
               <div className="flex items-center gap-2">
-                <Cpu className="h-3.5 w-3.5 text-[#0d7c85]" />
+                <Cpu className="h-3.5 w-3.5 text-primary" />
                 <span>Compute Engine</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="flex flex-col gap-3 pt-1 pb-4">
-              <div className="flex flex-col gap-1.5">
-                <Label className="text-xs text-slate-600 font-medium">Device Preference</Label>
+            <AccordionContent className="flex flex-col gap-3 pt-1 pb-5">
+              <div className="flex flex-col gap-2">
+                <Label className="text-xs text-muted-foreground font-medium">Device Preference</Label>
                 <Select value={devicePreference} onValueChange={onDevicePreferenceChange}>
-                  <SelectTrigger className="h-8 text-xs bg-white">
+                  <SelectTrigger className="h-9 text-xs bg-background">
                     <SelectValue placeholder="Select device" />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
