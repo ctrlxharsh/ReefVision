@@ -8,7 +8,6 @@ import {
   RefreshCw,
   CheckCircle2,
   Check,
-  RotateCcw,
   Cpu,
   Zap,
   Trash2,
@@ -17,7 +16,6 @@ import JSZip from "jszip";
 import { BrandLogo } from "../components/BrandLogo";
 import { UISelect } from "../components/UISelect";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
@@ -46,6 +44,42 @@ import {
   registerImage,
   loadSampleToStore,
 } from "../services/api";
+
+interface ModelGroupDef {
+  id: "sam" | "bioclip" | "bleaching";
+  name: string;
+  fullName: string;
+  task: string;
+  size: string;
+  filenames: string[];
+}
+
+const MODEL_GROUPS: ModelGroupDef[] = [
+  {
+    id: "sam",
+    name: "Segmentation Model",
+    fullName: "SAM ViT-B Segmentation Model",
+    task: "Dense Instance Segmentation",
+    size: "~383 MB",
+    filenames: ["sam_image_encoder.onnx", "sam_mask_decoder.onnx"],
+  },
+  {
+    id: "bioclip",
+    name: "Taxonomical Model",
+    fullName: "BioCLIP Taxonomy Model",
+    task: "Taxonomy & Growth Form",
+    size: "~345 MB",
+    filenames: ["bioclip_visual.onnx", "coral_taxonomy_embeddings.npy"],
+  },
+  {
+    id: "bleaching",
+    name: "Bleach Detection Model",
+    fullName: "NOAA Bleach Detection Model",
+    task: "Reef Health & Bleaching",
+    size: "~6.1 MB",
+    filenames: ["bleaching_yolo11n.onnx"],
+  },
+];
 
 interface UploadViewProps {
   onLaunchStudio: (images: LoadedImage[]) => void;
@@ -179,10 +213,10 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
     }
   };
 
-  // Trigger Download / Force Redownload & Poll Progress
-  const handleStartDownload = async (force: boolean = false, filename?: string) => {
+  // Trigger Download & Poll Progress (Re-download removed)
+  const handleStartDownload = async (target?: string | string[]) => {
     try {
-      await triggerModelDownload(force, filename);
+      await triggerModelDownload(false, target);
       const interval = setInterval(async () => {
         try {
           const prog = await getDownloadProgress();
@@ -204,17 +238,14 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
     }
   };
 
-  // Delete one or all models
-  const handleDeleteModel = async (filename?: string) => {
-    setIsDeletingModel(filename || "all");
+  // Delete one model group or specific file
+  const handleDeleteModel = async (target: string) => {
+    setIsDeletingModel(target);
     setLoadError(null);
     try {
-      const res = await deleteModel(filename);
+      const res = await deleteModel(target);
       setAllDownloaded(res.all_downloaded);
       setModelsList(res.models);
-      if (!res.all_downloaded) {
-        setShowDeleteModal(false);
-      }
     } catch (e: any) {
       alert(`Failed to delete model: ${e?.message || e}`);
     } finally {
@@ -223,28 +254,15 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
   };
 
   // Check readiness of model groups
-  const isSamReady = useMemo(() => {
+  const isGroupReady = (groupId: string): boolean => {
     if (allDownloaded) return true;
-    if (modelsList.length === 0) return allDownloaded;
-    const enc = modelsList.find((m) => m.filename.includes("sam_image_encoder"));
-    const dec = modelsList.find((m) => m.filename.includes("sam_mask_decoder"));
-    return Boolean(enc?.cached && dec?.cached);
-  }, [allDownloaded, modelsList]);
-
-  const isBioClipReady = useMemo(() => {
-    if (allDownloaded) return true;
-    if (modelsList.length === 0) return allDownloaded;
-    const clip = modelsList.find((m) => m.filename.includes("bioclip"));
-    const emb = modelsList.find((m) => m.filename.includes("taxonomy"));
-    return Boolean(clip?.cached && emb?.cached);
-  }, [allDownloaded, modelsList]);
-
-  const isBleachReady = useMemo(() => {
-    if (allDownloaded) return true;
-    if (modelsList.length === 0) return allDownloaded;
-    const bl = modelsList.find((m) => m.filename.includes("bleaching"));
-    return Boolean(bl?.cached);
-  }, [allDownloaded, modelsList]);
+    const group = MODEL_GROUPS.find((g) => g.id === groupId);
+    if (!group) return false;
+    return group.filenames.every((fname) => {
+      const item = modelsList.find((m) => m.filename === fname || m.filename.includes(fname));
+      return item?.cached ?? false;
+    });
+  };
 
   const getEngineName = (info: DeviceInfo | null): string => {
     if (!info) return "Detecting compute hardware...";
@@ -457,22 +475,10 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-7 px-2 text-[11px] font-semibold gap-1.5 border-slate-200"
-                    onClick={() => handleStartDownload(true)}
-                    disabled={downloadProgress.is_downloading || !!isDeletingModel}
-                    title="Force re-download all model weights from Hugging Face"
-                  >
-                    <RotateCcw className={`h-3 w-3 ${downloadProgress.is_downloading ? "animate-spin" : ""}`} />
-                    <span>{downloadProgress.is_downloading ? "Re-downloading..." : "Re-download"}</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
                     className="h-7 px-2 text-[11px] font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-1.5"
                     onClick={() => setShowDeleteModal(true)}
                     disabled={downloadProgress.is_downloading || !!isDeletingModel}
-                    title="Manage and delete downloaded model weights"
+                    title="Manage and delete individual foundation models"
                   >
                     <Trash2 className="h-3 w-3" />
                     <span>Delete</span>
@@ -481,27 +487,40 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               </div>
 
               <div className="model-chips-row">
-                <span
-                  className={`model-chip ${isSamReady ? "ready" : "needed"}`}
-                  title={isSamReady ? "SAM ViT-B Segmentation Model Ready" : "Download Required"}
-                >
-                  <Check size={11} className="chip-check" />
-                  <span>Segmentation Model</span>
-                </span>
-                <span
-                  className={`model-chip ${isBioClipReady ? "ready" : "needed"}`}
-                  title={isBioClipReady ? "BioCLIP Taxonomy Model Ready" : "Download Required"}
-                >
-                  <Check size={11} className="chip-check" />
-                  <span>Taxonomical Model</span>
-                </span>
-                <span
-                  className={`model-chip ${isBleachReady ? "ready" : "needed"}`}
-                  title={isBleachReady ? "NOAA Bleach Detection Model Ready" : "Download Required"}
-                >
-                  <Check size={11} className="chip-check" />
-                  <span>Bleach Detection Model</span>
-                </span>
+                {MODEL_GROUPS.map((group) => {
+                  const ready = isGroupReady(group.id);
+                  return (
+                    <span
+                      key={group.id}
+                      className={`model-chip ${ready ? "ready" : "needed"}`}
+                      title={`${group.fullName} (${group.size}) - ${ready ? "Ready" : "Download Required"}`}
+                    >
+                      {ready ? (
+                        <Check size={11} className="chip-check" />
+                      ) : (
+                        <AlertCircle size={11} />
+                      )}
+                      <span>{group.name}</span>
+                      {ready && (
+                        <button
+                          type="button"
+                          className="chip-delete-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteModel(group.id);
+                          }}
+                          disabled={downloadProgress.is_downloading || !!isDeletingModel}
+                          title={`Delete ${group.name} (${group.size})`}
+                        >
+                          <Trash2
+                            size={11}
+                            className={isDeletingModel === group.id ? "animate-spin text-red-500" : ""}
+                          />
+                        </button>
+                      )}
+                    </span>
+                  );
+                })}
               </div>
 
               {downloadProgress.is_downloading && (
@@ -611,75 +630,73 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               </div>
 
               <div className="models-required-list">
-                {modelsList.map((m) => (
-                  <div key={m.filename} className="model-item">
-                    <div className="model-item-info">
-                      <div className="model-name">{m.name}</div>
-                      <div className="model-meta">
-                        <span className="model-task">{m.task}</span>
-                        <span className="model-size-badge">{m.size}</span>
+                {MODEL_GROUPS.map((group) => {
+                  const ready = isGroupReady(group.id);
+                  return (
+                    <div key={group.id} className="model-item">
+                      <div className="model-item-info">
+                        <div className="model-name">{group.name}</div>
+                        <div className="model-meta">
+                          <span className="model-task">{group.task}</span>
+                          <span className="model-size-badge">{group.size}</span>
+                        </div>
                       </div>
-                    </div>
-                    <div className="model-item-actions">
-                      <span
-                        className={
-                          m.cached ? "model-badge-cached" : "model-badge-needed"
-                        }
-                      >
-                        {m.cached ? (
-                          <>
-                            <Check size={11} className="badge-icon" />
-                            <span>Downloaded</span>
-                          </>
-                        ) : (
-                          <>
-                            <DownloadCloud size={11} className="badge-icon" />
-                            <span>Download Required</span>
-                          </>
-                        )}
-                      </span>
-                      {m.cached ? (
-                        <div style={{ display: "flex", gap: "5px" }}>
-                          <button
-                            type="button"
-                            className="btn-model-action"
-                            onClick={() => handleStartDownload(true, m.filename)}
-                            disabled={downloadProgress.is_downloading || !!isDeletingModel}
-                            title={`Re-download ${m.name}`}
-                          >
-                            <RotateCcw size={12} className={downloadProgress.is_downloading && downloadProgress.current_file.includes(m.name) ? "spin" : ""} />
-                          </button>
+                      <div className="model-item-actions">
+                        <span
+                          className={ready ? "model-badge-cached" : "model-badge-needed"}
+                        >
+                          {ready ? (
+                            <>
+                              <Check size={11} className="badge-icon" />
+                              <span>Downloaded</span>
+                            </>
+                          ) : (
+                            <>
+                              <DownloadCloud size={11} className="badge-icon" />
+                              <span>Download Required</span>
+                            </>
+                          )}
+                        </span>
+                        {ready ? (
                           <button
                             type="button"
                             className="btn-model-action danger"
-                            onClick={() => handleDeleteModel(m.filename)}
-                            disabled={downloadProgress.is_downloading || isDeletingModel === m.filename}
-                            title={`Delete ${m.name}`}
+                            onClick={() => handleDeleteModel(group.id)}
+                            disabled={downloadProgress.is_downloading || isDeletingModel === group.id}
+                            title={`Delete ${group.name}`}
                           >
-                            <Trash2 size={12} className={isDeletingModel === m.filename ? "spin" : ""} />
+                            <Trash2 size={12} className={isDeletingModel === group.id ? "spin" : ""} />
                           </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn-model-action primary"
-                          onClick={() => handleStartDownload(false, m.filename)}
-                          disabled={downloadProgress.is_downloading || !!isDeletingModel}
-                          title={`Download ${m.name}`}
-                        >
-                          <DownloadCloud size={12} className={downloadProgress.is_downloading && downloadProgress.current_file.includes(m.name) ? "spin" : ""} />
-                        </button>
-                      )}
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn-model-action primary"
+                            onClick={() => handleStartDownload(group.id)}
+                            disabled={downloadProgress.is_downloading || !!isDeletingModel}
+                            title={`Download ${group.name}`}
+                          >
+                            <DownloadCloud
+                              size={12}
+                              className={
+                                downloadProgress.is_downloading &&
+                                downloadProgress.current_file.includes(group.name)
+                                  ? "spin"
+                                  : ""
+                              }
+                            />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div style={{ marginTop: "1.25rem" }}>
                 <button
                   className="btn btn-primary btn-block"
                   style={{ padding: "12px" }}
-                  onClick={() => handleStartDownload(false)}
+                  onClick={() => handleStartDownload()}
                   disabled={downloadProgress.is_downloading || !!isDeletingModel}
                 >
                   <DownloadCloud size={18} />
@@ -687,28 +704,6 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                     ? "Downloading Weights..."
                     : "Download Foundation Models Now"}
                 </button>
-                {modelsList.some((m) => m.cached) && (
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-block"
-                    style={{
-                      marginTop: "0.6rem",
-                      padding: "9px",
-                      borderColor: "#fecaca",
-                      color: "#dc2626",
-                      fontSize: "0.8rem",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px",
-                    }}
-                    onClick={() => handleDeleteModel()}
-                    disabled={downloadProgress.is_downloading || !!isDeletingModel}
-                  >
-                    <Trash2 size={13} className={isDeletingModel === "all" ? "spin" : ""} />
-                    <span>{isDeletingModel === "all" ? "Deleting Downloaded Weights..." : "Delete All Downloaded Models"}</span>
-                  </button>
-                )}
               </div>
 
               {downloadProgress.is_downloading && (
@@ -914,52 +909,68 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
             <div className="flex items-center gap-2">
               <Trash2 className="h-5 w-5 text-red-500" />
               <DialogTitle className="text-base font-bold text-[#0f1e4a]">
-                Manage & Delete Foundation Models
+                Manage Foundation Models
               </DialogTitle>
             </div>
             <DialogDescription className="text-xs text-slate-500 pt-1">
-              Deleting foundation models frees disk space (~720 MB). However, imagery upload and analysis cannot proceed until models are downloaded again.
+              Delete individual models to free disk space. You can re-download any deleted model at any time.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2 my-2 max-h-60 overflow-y-auto">
-            {modelsList.map((m) => (
-              <div
-                key={m.filename}
-                className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 bg-slate-50/60"
-              >
-                <div>
-                  <div className="text-xs font-bold text-slate-800">{m.name}</div>
-                  <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
-                    <span>{m.task}</span>
-                    <span>•</span>
-                    <span>{m.size}</span>
+            {MODEL_GROUPS.map((group) => {
+              const ready = isGroupReady(group.id);
+              return (
+                <div
+                  key={group.id}
+                  className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 bg-slate-50/60"
+                >
+                  <div>
+                    <div className="text-xs font-bold text-slate-800">{group.name}</div>
+                    <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                      <span>{group.task}</span>
+                      <span>•</span>
+                      <span>{group.size}</span>
+                    </div>
+                  </div>
+                  <div>
+                    {ready ? (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="h-7 px-2.5 text-xs gap-1.5 rounded-md"
+                        onClick={() => handleDeleteModel(group.id)}
+                        disabled={!!isDeletingModel}
+                        title={`Delete ${group.name}`}
+                      >
+                        <Trash2 className={`h-3.5 w-3.5 ${isDeletingModel === group.id ? "animate-spin" : ""}`} />
+                        <span>{isDeletingModel === group.id ? "Deleting..." : "Delete"}</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2.5 text-xs gap-1.5 rounded-md border-teal-200 text-teal-700 hover:bg-teal-50"
+                        onClick={() => {
+                          handleStartDownload(group.id);
+                          setShowDeleteModal(false);
+                        }}
+                        disabled={downloadProgress.is_downloading || !!isDeletingModel}
+                        title={`Download ${group.name}`}
+                      >
+                        <DownloadCloud className="h-3.5 w-3.5" />
+                        <span>Download</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <div>
-                  {m.cached ? (
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      className="h-7 w-7 rounded-md"
-                      onClick={() => handleDeleteModel(m.filename)}
-                      disabled={!!isDeletingModel}
-                      title={`Delete ${m.name}`}
-                    >
-                      <Trash2 className={`h-3.5 w-3.5 ${isDeletingModel === m.filename ? "animate-spin" : ""}`} />
-                    </Button>
-                  ) : (
-                    <Badge variant="outline" className="text-[10px] text-slate-400">
-                      Not Cached
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0 mt-3">
+          <DialogFooter className="mt-3">
             <Button
               type="button"
               variant="outline"
@@ -967,17 +978,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               onClick={() => setShowDeleteModal(false)}
               disabled={!!isDeletingModel}
             >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={() => handleDeleteModel()}
-              disabled={!!isDeletingModel}
-            >
-              <Trash2 className={`h-3.5 w-3.5 ${isDeletingModel === "all" ? "animate-spin" : ""}`} />
-              <span>{isDeletingModel === "all" ? "Deleting All Weights..." : "Delete All Models"}</span>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

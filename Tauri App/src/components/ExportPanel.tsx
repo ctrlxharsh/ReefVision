@@ -12,7 +12,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { exportCocoJson, exportCsvData } from "../services/api";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 interface ExportPanelProps {
   imageName: string;
@@ -163,7 +163,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
   const handleDownloadOverlay = async () => {
     if (!overlayDataUrl) {
-      alert("No segmentation overlay rendered yet to export.");
+      alert("No overlay available to export yet. Please wait for model analysis to complete.");
       return;
     }
     try {
@@ -171,7 +171,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
       setFeedbackMsg(null);
 
       const res = await saveFileNativeOrBrowser({
-        defaultName: `${stemName}_overlay.png`,
+        defaultName: `${stemName}_segmentation_overlay.png`,
         filterName: "PNG Image",
         extensions: ["png"],
         content: overlayDataUrl,
@@ -197,12 +197,9 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
       let csvStr = "";
       try {
-        csvStr = await exportCsvData(imageName, minAreaPx);
+        csvStr = await exportCsvData(imageName);
       } catch (err) {
-        console.warn("Backend CSV export returned error, generating from client segments:", err);
-      }
-
-      if (!csvStr && rawJsonData?.segments && rawJsonData.segments.length > 0) {
+        console.warn("Backend CSV export error, falling back to client synthesis:", err);
         const headers = [
           "ID",
           "Taxon Genus",
@@ -254,91 +251,106 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   };
 
   return (
-    <div className="mt-8">
-      <div className="flex items-center gap-2 mb-3">
-        <Download className="h-5 w-5 text-[#0f1e4a]" />
-        <h3 className="font-bold text-[#0f1e4a] text-sm tracking-tight">
-          Export & Data Inspector
-        </h3>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleDownloadCoco}
-          disabled={isExporting}
-          className="h-11 justify-center border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold shadow-xs"
-        >
-          {isExporting ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
-          ) : (
-            <FileCode className="h-4 w-4 text-[#0d7c85]" />
-          )}
-          <span>Export COCO JSON</span>
-        </Button>
-
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleDownloadOverlay}
-          disabled={isExporting || !overlayDataUrl}
-          className="h-11 justify-center border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold shadow-xs"
-        >
-          {isExporting ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
-          ) : (
-            <ImageIcon className="h-4 w-4 text-[#0d7c85]" />
-          )}
-          <span>Export Overlay PNG</span>
-        </Button>
-
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleDownloadCsv}
-          disabled={isExporting || !hasSegments}
-          className="h-11 justify-center border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold shadow-xs"
-        >
-          {isExporting ? (
-            <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
-          ) : (
-            <FileSpreadsheet className="h-4 w-4 text-[#0d7c85]" />
-          )}
-          <span>Export Segments CSV</span>
-        </Button>
-      </div>
-
-      {feedbackMsg && (
-        <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3.5 py-2 text-xs font-semibold text-emerald-700 shadow-xs animate-in fade-in slide-in-from-top-1">
-          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-          <span>{feedbackMsg}</span>
-        </div>
-      )}
-
-      <Card className="mt-4 overflow-hidden border-slate-200">
-        <div
-          className="flex items-center justify-between p-3.5 bg-slate-50/70 hover:bg-slate-50 cursor-pointer select-none transition-colors"
-          onClick={() => setShowJson(!showJson)}
-        >
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-            <FileCode className="h-4 w-4 text-[#0d7c85]" />
-            <span>Raw Model Output (JSON)</span>
+    <Card className="shadow-xs border-slate-200/90 overflow-hidden">
+      <CardHeader className="p-5 pb-4 border-b border-slate-100 bg-white">
+        <div className="flex items-center gap-2.5">
+          <div className="h-7 w-7 rounded-lg bg-teal-50 text-[#0d7c85] flex items-center justify-center shrink-0">
+            <Download className="h-4 w-4" />
           </div>
-          {showJson ? (
-            <ChevronDown className="h-4 w-4 text-slate-400" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-slate-400" />
-          )}
+          <div>
+            <CardTitle className="text-sm font-bold text-[#0f1e4a]">
+              Export & Data Inspector
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-500 mt-0.5">
+              Save COCO annotations, visual masks, and benthic data spreadsheets
+            </CardDescription>
+          </div>
         </div>
-        {showJson && (
-          <div className="p-4 border-t border-slate-100 bg-slate-900">
-            <pre className="text-[11px] font-mono text-slate-200 max-h-80 overflow-auto whitespace-pre-wrap leading-relaxed">
-              {JSON.stringify(rawJsonData, null, 2)}
-            </pre>
+      </CardHeader>
+
+      <CardContent className="p-5 space-y-4">
+        {/* Export Buttons */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleDownloadCoco}
+            disabled={isExporting}
+            className="h-10 justify-center border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold gap-2 shadow-xs"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
+            ) : (
+              <FileCode className="h-4 w-4 text-[#0d7c85]" />
+            )}
+            <span>Export COCO JSON</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleDownloadOverlay}
+            disabled={isExporting || !overlayDataUrl}
+            className="h-10 justify-center border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold gap-2 shadow-xs"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
+            ) : (
+              <ImageIcon className="h-4 w-4 text-[#0d7c85]" />
+            )}
+            <span>Export Overlay PNG</span>
+          </Button>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleDownloadCsv}
+            disabled={isExporting || !hasSegments}
+            className="h-10 justify-center border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold gap-2 shadow-xs"
+          >
+            {isExporting ? (
+              <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
+            ) : (
+              <FileSpreadsheet className="h-4 w-4 text-[#0d7c85]" />
+            )}
+            <span>Export Segments CSV</span>
+          </Button>
+        </div>
+
+        {/* Feedback Alert */}
+        {feedbackMsg && (
+          <div className="inline-flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3.5 py-2 text-xs font-semibold text-emerald-700 shadow-xs animate-in fade-in">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+            <span>{feedbackMsg}</span>
           </div>
         )}
-      </Card>
-    </div>
+
+        {/* JSON Inspector Accordion */}
+        <div className="rounded-lg border border-slate-200 overflow-hidden">
+          <button
+            type="button"
+            className="w-full flex items-center justify-between p-3 bg-slate-50/80 hover:bg-slate-100/70 text-left transition-colors"
+            onClick={() => setShowJson(!showJson)}
+          >
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+              <FileCode className="h-4 w-4 text-[#0d7c85]" />
+              <span>Raw Model Output (JSON)</span>
+            </div>
+            {showJson ? (
+              <ChevronDown className="h-4 w-4 text-slate-400" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-slate-400" />
+            )}
+          </button>
+          {showJson && (
+            <div className="p-4 border-t border-slate-200 bg-slate-900">
+              <pre className="text-[11px] font-mono text-slate-200 max-h-80 overflow-auto whitespace-pre-wrap leading-relaxed">
+                {JSON.stringify(rawJsonData, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };

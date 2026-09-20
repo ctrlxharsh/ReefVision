@@ -112,13 +112,7 @@ def render_upload_page():
             )
 
             if all_downloaded:
-                c_pill, c_redownload = st.columns([2.5, 1.2])
-                with c_pill:
-                    st.markdown("<div class='models-ready-pill'>✓ Foundation Models Ready</div>", unsafe_allow_html=True)
-                with c_redownload:
-                    if st.button("↻ Re-download", key="redownload_btn", help="Force re-download foundation models from Hugging Face"):
-                        st.session_state["force_redownload_triggered"] = True
-                        st.rerun()
+                st.markdown("<div class='models-ready-pill' style='margin-bottom: 0.6rem;'>✓ Foundation Models Ready</div>", unsafe_allow_html=True)
 
                 st.markdown(
                     "<div class='model-chips-row' style='margin-bottom: 1rem;'>"
