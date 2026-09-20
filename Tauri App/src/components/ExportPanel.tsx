@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { exportCocoJson, exportCsvData } from "../services/api";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 interface ExportPanelProps {
   imageName: string;
@@ -252,70 +254,91 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   };
 
   return (
-    <div style={{ marginTop: "2rem" }}>
-      <div className="section-title">
-        <Download size={20} color="var(--color-navy)" />
-        <span>Export & Data Inspector</span>
+    <div className="mt-8">
+      <div className="flex items-center gap-2 mb-3">
+        <Download className="h-5 w-5 text-[#0f1e4a]" />
+        <h3 className="font-bold text-[#0f1e4a] text-sm tracking-tight">
+          Export & Data Inspector
+        </h3>
       </div>
 
-      <div className="export-grid">
-        <button
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Button
           type="button"
-          className="btn btn-secondary"
+          variant="outline"
           onClick={handleDownloadCoco}
           disabled={isExporting}
+          className="h-11 justify-center border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold shadow-xs"
         >
-          {isExporting ? <Loader2 size={16} className="animate-spin" /> : <FileCode size={16} />}
+          {isExporting ? (
+            <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
+          ) : (
+            <FileCode className="h-4 w-4 text-[#0d7c85]" />
+          )}
           <span>Export COCO JSON</span>
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
-          className="btn btn-secondary"
+          variant="outline"
           onClick={handleDownloadOverlay}
           disabled={isExporting || !overlayDataUrl}
+          className="h-11 justify-center border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold shadow-xs"
         >
-          {isExporting ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
+          {isExporting ? (
+            <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
+          ) : (
+            <ImageIcon className="h-4 w-4 text-[#0d7c85]" />
+          )}
           <span>Export Overlay PNG</span>
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
-          className="btn btn-secondary"
+          variant="outline"
           onClick={handleDownloadCsv}
           disabled={isExporting || !hasSegments}
+          className="h-11 justify-center border-slate-200 hover:border-[#0d7c85] hover:text-[#0d7c85] hover:bg-teal-50/40 text-xs font-semibold shadow-xs"
         >
-          {isExporting ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
+          {isExporting ? (
+            <Loader2 className="h-4 w-4 animate-spin text-[#0d7c85]" />
+          ) : (
+            <FileSpreadsheet className="h-4 w-4 text-[#0d7c85]" />
+          )}
           <span>Export Segments CSV</span>
-        </button>
+        </Button>
       </div>
 
       {feedbackMsg && (
-        <div className="export-feedback-toast">
-          <CheckCircle2 size={15} color="#059669" />
+        <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-50 border border-emerald-200 px-3.5 py-2 text-xs font-semibold text-emerald-700 shadow-xs animate-in fade-in slide-in-from-top-1">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
           <span>{feedbackMsg}</span>
         </div>
       )}
 
-      <div className="sidebar-expander" style={{ marginTop: "1rem" }}>
+      <Card className="mt-4 overflow-hidden border-slate-200">
         <div
-          className="expander-header"
+          className="flex items-center justify-between p-3.5 bg-slate-50/70 hover:bg-slate-50 cursor-pointer select-none transition-colors"
           onClick={() => setShowJson(!showJson)}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <FileCode size={16} color="var(--color-teal)" />
+          <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+            <FileCode className="h-4 w-4 text-[#0d7c85]" />
             <span>Raw Model Output (JSON)</span>
           </div>
-          {showJson ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          {showJson ? (
+            <ChevronDown className="h-4 w-4 text-slate-400" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-slate-400" />
+          )}
         </div>
         {showJson && (
-          <div className="expander-body">
-            <pre className="raw-json-box">
+          <div className="p-4 border-t border-slate-100 bg-slate-900">
+            <pre className="text-[11px] font-mono text-slate-200 max-h-80 overflow-auto whitespace-pre-wrap leading-relaxed">
               {JSON.stringify(rawJsonData, null, 2)}
             </pre>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };

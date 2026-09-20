@@ -1,3 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #0f1e4a;
+  --color-navy-dark: #0a1433;
+  --color-navy-light: #162e66;
+  --color-teal: #0d7c85;
+  --color-teal-hover: #0e8687;
+  --color-teal-light: #f0fdfa;
+  --color-teal-border: #ccfbf1;
+  --color-success: #059669;
+  --color-warning: #b45309;
+  --color-danger: #b91c1c;
+  --color-info: #0284c7;
+}
+
 /* Andromeida Reef Vision Studio - Master Stylesheet (Modular Architecture) */
 @import "./theme.css";
 @import "./base.css";

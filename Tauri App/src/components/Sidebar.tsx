@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Sliders, Palette, Cpu, ChevronRight, ChevronDown, Minus, Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { UISelect, UISelectOption } from "./UISelect";
 import { InfoTooltip } from "./InfoTooltip";
+import { Slider } from "@/components/ui/slider";
 import { DeviceInfo, CoralSegment } from "../types";
 
 interface SidebarProps {
@@ -288,15 +289,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <span className="form-slider-val">{pointsPerSide}</span>
                 </div>
-                <input
-                  type="range"
-                  min={8}
-                  max={36}
-                  step={4}
-                  value={pointsPerSide}
-                  onChange={(e) => onPointsPerSideChange(Number(e.target.value))}
-                  className="form-slider"
-                />
+                <div className="pt-2 pb-1">
+                  <Slider
+                    min={8}
+                    max={36}
+                    step={4}
+                    value={[pointsPerSide]}
+                    onValueChange={(vals) => onPointsPerSideChange(vals[0])}
+                  />
+                </div>
               </div>
 
               {/* IoU Threshold */}
@@ -308,15 +309,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <span className="form-slider-val">{iouThresh.toFixed(2)}</span>
                 </div>
-                <input
-                  type="range"
-                  min={0.20}
-                  max={0.98}
-                  step={0.02}
-                  value={iouThresh}
-                  onChange={(e) => onIouThreshChange(Number(e.target.value))}
-                  className="form-slider"
-                />
+                <div className="pt-2 pb-1">
+                  <Slider
+                    min={0.20}
+                    max={0.98}
+                    step={0.02}
+                    value={[iouThresh]}
+                    onValueChange={(vals) => onIouThreshChange(vals[0])}
+                  />
+                </div>
               </div>
 
               {/* Stability Threshold */}
@@ -328,15 +329,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <span className="form-slider-val">{stabilityThresh.toFixed(2)}</span>
                 </div>
-                <input
-                  type="range"
-                  min={0.20}
-                  max={0.99}
-                  step={0.01}
-                  value={stabilityThresh}
-                  onChange={(e) => onStabilityThreshChange(Number(e.target.value))}
-                  className="form-slider"
-                />
+                <div className="pt-2 pb-1">
+                  <Slider
+                    min={0.20}
+                    max={0.99}
+                    step={0.01}
+                    value={[stabilityThresh]}
+                    onValueChange={(vals) => onStabilityThreshChange(vals[0])}
+                  />
+                </div>
               </div>
 
               {/* Min Mask Area */}
@@ -451,15 +452,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <span className="form-slider-val">{alpha.toFixed(2)}</span>
                 </div>
-                <input
-                  type="range"
-                  min={0.10}
-                  max={0.90}
-                  step={0.05}
-                  value={alpha}
-                  onChange={(e) => onAlphaChange(Number(e.target.value))}
-                  className="form-slider"
-                />
+                <div className="pt-2 pb-1">
+                  <Slider
+                    min={0.10}
+                    max={0.90}
+                    step={0.05}
+                    value={[alpha]}
+                    onValueChange={(vals) => onAlphaChange(vals[0])}
+                  />
+                </div>
               </div>
 
               {/* Two Column Checkboxes */}

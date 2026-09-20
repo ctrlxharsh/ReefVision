@@ -1,6 +1,11 @@
 import React from "react";
-import * as Select from "@radix-ui/react-select";
-import { ChevronDown, Check } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export interface UISelectOption {
   value: string;
@@ -23,28 +28,17 @@ export const UISelect: React.FC<UISelectProps> = ({
   className = "",
 }) => {
   return (
-    <Select.Root value={value} onValueChange={onChange}>
-      <Select.Trigger className={`ui-select-trigger ${className}`} aria-label={placeholder}>
-        <Select.Value placeholder={placeholder} />
-        <Select.Icon className="ui-select-icon">
-          <ChevronDown size={14} />
-        </Select.Icon>
-      </Select.Trigger>
-
-      <Select.Portal>
-        <Select.Content className="ui-select-content" position="popper" sideOffset={4}>
-          <Select.Viewport className="ui-select-viewport">
-            {options.map((opt) => (
-              <Select.Item key={opt.value} value={opt.value} className="ui-select-item">
-                <Select.ItemText>{opt.label}</Select.ItemText>
-                <Select.ItemIndicator className="ui-select-indicator">
-                  <Check size={14} />
-                </Select.ItemIndicator>
-              </Select.Item>
-            ))}
-          </Select.Viewport>
-        </Select.Content>
-      </Select.Portal>
-    </Select.Root>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger className={className} aria-label={placeholder}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent position="popper" sideOffset={4}>
+        {options.map((opt) => (
+          <SelectItem key={opt.value} value={opt.value}>
+            {opt.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 };

@@ -1,5 +1,10 @@
 import React from "react";
-import * as Tooltip from "@radix-ui/react-tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 
 interface InfoTooltipProps {
@@ -7,31 +12,27 @@ interface InfoTooltipProps {
   side?: "top" | "right" | "bottom" | "left";
 }
 
-export const InfoTooltip: React.FC<InfoTooltipProps> = ({ content, side = "top" }) => {
+export const InfoTooltip: React.FC<InfoTooltipProps> = ({
+  content,
+  side = "top",
+}) => {
   return (
-    <Tooltip.Provider delayDuration={100}>
-      <Tooltip.Root>
-        <Tooltip.Trigger asChild>
+    <TooltipProvider delayDuration={100}>
+      <Tooltip>
+        <TooltipTrigger asChild>
           <button
             type="button"
-            className="info-tooltip-btn"
+            className="inline-flex items-center justify-center text-slate-400 hover:text-[#0d7c85] transition-colors cursor-help p-0.5 rounded-full hover:bg-slate-100"
             aria-label="More information"
             onClick={(e) => e.preventDefault()}
           >
-            <Info size={12} />
+            <Info size={13} />
           </button>
-        </Tooltip.Trigger>
-        <Tooltip.Portal>
-          <Tooltip.Content
-            className="info-tooltip-content"
-            side={side}
-            sideOffset={5}
-          >
-            {content}
-            <Tooltip.Arrow className="info-tooltip-arrow" />
-          </Tooltip.Content>
-        </Tooltip.Portal>
-      </Tooltip.Root>
-    </Tooltip.Provider>
+        </TooltipTrigger>
+        <TooltipContent side={side} sideOffset={5}>
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };

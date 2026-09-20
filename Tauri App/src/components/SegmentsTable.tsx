@@ -8,6 +8,16 @@ import {
   SortingState,
 } from "@tanstack/react-table";
 import { ArrowUpDown, ArrowUp, ArrowDown, Layers } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { CoralSegment, SummaryStats } from "../types";
 
 interface SegmentsTableProps {
@@ -36,8 +46,11 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
         cell: (info) => {
           const s = info.row.original;
           return (
-            <div className="table-id-cell">
-              <span className="table-color-dot" style={{ backgroundColor: s.color_hex }} />
+            <div className="flex items-center gap-2 font-mono text-xs font-semibold">
+              <span
+                className="h-2.5 w-2.5 rounded-full ring-1 ring-black/10 shrink-0"
+                style={{ backgroundColor: s.color_hex }}
+              />
               <span>{s.id_str}</span>
             </div>
           );
@@ -45,25 +58,31 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
       }),
       columnHelper.accessor("genus", {
         header: "Taxon Genus",
-        cell: (info) => <span className="table-genus-text">{info.getValue()}</span>,
+        cell: (info) => (
+          <span className="font-semibold text-slate-900">{info.getValue()}</span>
+        ),
       }),
       columnHelper.accessor("growth_form", {
         header: "Growth Form",
-        cell: (info) => <span style={{ color: "#64748b" }}>{info.getValue()}</span>,
+        cell: (info) => (
+          <span className="text-slate-500">{info.getValue()}</span>
+        ),
       }),
       columnHelper.accessor("taxon_conf", {
         header: "Taxon Conf",
         cell: (info) => {
           const val = info.getValue();
           return (
-            <div className="table-prog-cell">
-              <div className="table-prog-track">
+            <div className="flex items-center gap-2 min-w-[100px]">
+              <div className="h-1.5 w-16 rounded-full bg-slate-100 overflow-hidden shrink-0">
                 <div
-                  className="table-prog-fill"
-                  style={{ width: `${Math.min(val, 100)}%`, backgroundColor: "#0d7c85" }}
+                  className="h-full bg-[#0d7c85]"
+                  style={{ width: `${Math.min(val, 100)}%` }}
                 />
               </div>
-              <span className="table-prog-val">{val.toFixed(1)}%</span>
+              <span className="text-[11px] font-mono text-slate-600">
+                {val.toFixed(1)}%
+              </span>
             </div>
           );
         },
@@ -73,9 +92,12 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
         cell: (info) => {
           const cond = info.getValue();
           return (
-            <span className={cond === "Bleached" ? "badge-bleached" : "badge-healthy"}>
+            <Badge
+              variant={cond === "Bleached" ? "destructive" : "success"}
+              className="text-[10px] uppercase tracking-wider font-bold"
+            >
               {cond}
-            </span>
+            </Badge>
           );
         },
       }),
@@ -85,32 +107,41 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
           const val = info.getValue();
           const cond = info.row.original.condition;
           return (
-            <div className="table-prog-cell">
-              <div className="table-prog-track">
+            <div className="flex items-center gap-2 min-w-[100px]">
+              <div className="h-1.5 w-16 rounded-full bg-slate-100 overflow-hidden shrink-0">
                 <div
-                  className="table-prog-fill"
-                  style={{
-                    width: `${Math.min(val, 100)}%`,
-                    backgroundColor: cond === "Bleached" ? "#dc2626" : "#059669",
-                  }}
+                  className={`h-full ${
+                    cond === "Bleached" ? "bg-red-500" : "bg-emerald-500"
+                  }`}
+                  style={{ width: `${Math.min(val, 100)}%` }}
                 />
               </div>
-              <span className="table-prog-val">{val.toFixed(1)}%</span>
+              <span className="text-[11px] font-mono text-slate-600">
+                {val.toFixed(1)}%
+              </span>
             </div>
           );
         },
       }),
       columnHelper.accessor("area_pct", {
         header: "Area (%)",
-        cell: (info) => <span className="mono-val">{info.getValue()}%</span>,
+        cell: (info) => (
+          <span className="font-mono text-xs">{info.getValue()}%</span>
+        ),
       }),
       columnHelper.accessor("area_px", {
         header: "Area (px)",
-        cell: (info) => <span className="mono-val">{info.getValue().toLocaleString("en-US")}</span>,
+        cell: (info) => (
+          <span className="font-mono text-xs">
+            {info.getValue().toLocaleString("en-US")}
+          </span>
+        ),
       }),
       columnHelper.accessor("predicted_iou", {
         header: "IoU Confidence",
-        cell: (info) => <span className="mono-val">{info.getValue().toFixed(3)}</span>,
+        cell: (info) => (
+          <span className="font-mono text-xs">{info.getValue().toFixed(3)}</span>
+        ),
       }),
     ],
     []
@@ -128,115 +159,139 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
   });
 
   return (
-    <div className="table-section-container">
-      <div className="section-header">
-        <Layers size={18} className="section-header-icon" />
-        <span>Detected Coral Segments Breakdown</span>
+    <Card className="my-4 p-5">
+      <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+        <Layers className="h-4 w-4 text-[#0d7c85]" />
+        <h3 className="font-bold text-[#0f1e4a] text-sm tracking-tight">
+          Detected Coral Segments Breakdown
+        </h3>
       </div>
-      <div className="table-meta-bar">
-        <div className="meta-pill">
-          <span className="meta-pill-label">Resolution</span>
-          <span className="meta-pill-val">{stats.image_resolution ? stats.image_resolution.replace("x", " × ") : "2048 × 1024"}</span>
-        </div>
-        <div className="meta-pill">
-          <span className="meta-pill-label">Coral Coverage</span>
-          <span className="meta-pill-val highlight">{stats.coral_coverage_pct}%</span>
-          <span className="meta-pill-secondary">({stats.coral_covered_pixels.toLocaleString("en-US")} px)</span>
-        </div>
-        <div className="meta-pill">
-          <span className="meta-pill-label">Total Instances</span>
-          <span className="meta-pill-val badge-accent">{stats.total_corals_detected}</span>
-        </div>
+
+      {/* Meta Bar */}
+      <div className="flex flex-wrap items-center gap-2 my-3">
+        <Badge variant="outline" className="bg-slate-50 text-slate-600 font-normal">
+          <span className="font-semibold text-slate-800 mr-1.5">Resolution:</span>
+          <span className="font-mono text-[11px]">
+            {stats.image_resolution
+              ? stats.image_resolution.replace("x", " × ")
+              : "2048 × 1024"}
+          </span>
+        </Badge>
+        <Badge variant="outline" className="bg-slate-50 text-slate-600 font-normal">
+          <span className="font-semibold text-slate-800 mr-1.5">Coral Coverage:</span>
+          <span className="font-bold text-[#0d7c85] mr-1">
+            {stats.coral_coverage_pct}%
+          </span>
+          <span className="font-mono text-[10px] text-slate-400">
+            ({stats.coral_covered_pixels.toLocaleString("en-US")} px)
+          </span>
+        </Badge>
+        <Badge variant="coral" className="font-semibold">
+          <span>Total Instances:</span>
+          <span className="ml-1 font-mono font-bold text-[#0d7c85]">
+            {stats.total_corals_detected}
+          </span>
+        </Badge>
       </div>
 
       {isLoading && segments.length === 0 ? (
-        <div className="table-frame">
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Taxon Genus</th>
-                <th>Growth Form</th>
-                <th>Taxon Conf</th>
-                <th>Condition</th>
-                <th>Condition Conf</th>
-                <th>Area (%)</th>
-                <th>Area (px)</th>
-                <th>IoU Confidence</th>
-              </tr>
-            </thead>
-            <tbody>
+        <div className="rounded-xl border border-slate-200 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Taxon Genus</TableHead>
+                <TableHead>Growth Form</TableHead>
+                <TableHead>Taxon Conf</TableHead>
+                <TableHead>Condition</TableHead>
+                <TableHead>Condition Conf</TableHead>
+                <TableHead>Area (%)</TableHead>
+                <TableHead>Area (px)</TableHead>
+                <TableHead>IoU Confidence</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {[1, 2, 3, 4, 5].map((i) => (
-                <tr key={i} className="skeleton-tr">
-                  <td colSpan={9}>
-                    <div className="table-skeleton-bar" />
-                  </td>
-                </tr>
+                <TableRow key={i}>
+                  <TableCell colSpan={9}>
+                    <div className="h-4 w-full animate-pulse rounded bg-slate-100" />
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       ) : segments.length === 0 ? (
-        <div className="table-empty-notice">
+        <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-400">
           No coral segments detected with current threshold settings. Try lowering the IoU or Stability threshold in the sidebar.
         </div>
       ) : (
-        <div className="table-frame">
-          <table className="custom-table">
-            <thead>
+        <div className="rounded-xl border border-slate-200 overflow-hidden max-h-[420px] overflow-y-auto">
+          <Table>
+            <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
+                <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     const isSortable = header.column.getCanSort();
                     const sortDir = header.column.getIsSorted();
                     return (
-                      <th
+                      <TableHead
                         key={header.id}
                         onClick={header.column.getToggleSortingHandler()}
-                        style={{ cursor: isSortable ? "pointer" : "default" }}
+                        className={isSortable ? "cursor-pointer select-none hover:bg-slate-100/80 transition-colors" : ""}
                       >
-                        <div className="th-flex">
-                          {flexRender(header.column.columnDef.header, header.getContext())}
+                        <div className="flex items-center gap-1.5">
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                           {isSortable && (
-                            <span className="th-sort-arrow">
+                            <span className="shrink-0">
                               {sortDir === "asc" ? (
-                                <ArrowUp size={13} color="#0d7c85" />
+                                <ArrowUp className="h-3 w-3 text-[#0d7c85]" />
                               ) : sortDir === "desc" ? (
-                                <ArrowDown size={13} color="#0d7c85" />
+                                <ArrowDown className="h-3 w-3 text-[#0d7c85]" />
                               ) : (
-                                <ArrowUpDown size={11} opacity={0.3} />
+                                <ArrowUpDown className="h-3 w-3 opacity-30" />
                               )}
                             </span>
                           )}
                         </div>
-                      </th>
+                      </TableHead>
                     );
                   })}
-                </tr>
+                </TableRow>
               ))}
-            </thead>
-            <tbody>
+            </TableHeader>
+            <TableBody>
               {table.getRowModel().rows.map((row) => {
                 const s = row.original;
                 const isSelected = selectedSegmentId === s.id;
                 return (
-                  <tr
+                  <TableRow
                     key={row.id}
-                    className={`table-row-item ${isSelected ? "selected" : ""}`}
-                    onClick={() => onSelectSegment && onSelectSegment(isSelected ? null : s.id)}
+                    data-state={isSelected ? "selected" : undefined}
+                    onClick={() =>
+                      onSelectSegment &&
+                      onSelectSegment(isSelected ? null : s.id)
+                    }
+                    className="cursor-pointer"
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
                     ))}
-                  </tr>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
-    </div>
+    </Card>
   );
 };

@@ -12,11 +12,21 @@ import {
   Cpu,
   Zap,
   Trash2,
-  X,
 } from "lucide-react";
 import JSZip from "jszip";
 import { BrandLogo } from "../components/BrandLogo";
 import { UISelect } from "../components/UISelect";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   DeviceInfo,
   ModelSpec,
@@ -496,12 +506,11 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                     <span className="progress-filename">{downloadProgress.current_file}</span>
                     <span className="progress-pct">{downloadProgress.overall_pct}%</span>
                   </div>
-                  <div className="redownload-progress-bar-bg">
-                    <div
-                      className="redownload-progress-bar-fill"
-                      style={{ width: `${downloadProgress.overall_pct}%` }}
-                    />
-                  </div>
+                  <Progress
+                    value={downloadProgress.overall_pct}
+                    className="h-2 bg-teal-950/20 my-1"
+                    indicatorColor="bg-[#0d7c85]"
+                  />
                   <div className="progress-detail">{downloadProgress.detail}</div>
                 </div>
               )}
@@ -704,17 +713,11 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                     <span>{downloadProgress.current_file}</span>
                     <span>{downloadProgress.overall_pct}%</span>
                   </div>
-                  <div className="table-progress-bg" style={{ height: 4, borderRadius: 9999, overflow: "hidden" }}>
-                    <div
-                      className="table-progress-bar"
-                      style={{
-                        width: `${downloadProgress.overall_pct}%`,
-                        background: "var(--gradient-brand)",
-                        height: "100%",
-                        borderRadius: 9999,
-                      }}
-                    />
-                  </div>
+                  <Progress
+                    value={downloadProgress.overall_pct}
+                    className="h-2 bg-slate-100 my-1"
+                    indicatorColor="bg-[#0d7c85]"
+                  />
                   <div style={{ fontSize: "0.76rem", color: "var(--color-text-muted)", marginTop: 4 }}>
                     {downloadProgress.detail}
                   </div>
@@ -901,89 +904,80 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
       </div>
 
       {/* Model Management Modal */}
-      {showDeleteModal && (
-        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
-          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title-group">
-                <Trash2 size={16} style={{ color: "#ef4444" }} />
-                <h3 className="modal-title">Manage & Delete Foundation Models</h3>
-              </div>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setShowDeleteModal(false)}
-                title="Close"
-              >
-                <X size={16} />
-              </button>
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="max-w-md p-6">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-red-500" />
+              <DialogTitle className="text-base font-bold text-[#0f1e4a]">
+                Manage & Delete Foundation Models
+              </DialogTitle>
             </div>
+            <DialogDescription className="text-xs text-slate-500 pt-1">
+              Deleting foundation models frees disk space (~720 MB). However, imagery upload and analysis cannot proceed until models are downloaded again.
+            </DialogDescription>
+          </DialogHeader>
 
-            <div className="modal-body">
-              <div className="modal-warning-box">
-                <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div className="space-y-2 my-2 max-h-60 overflow-y-auto">
+            {modelsList.map((m) => (
+              <div
+                key={m.filename}
+                className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 bg-slate-50/60"
+              >
                 <div>
-                  <strong>Mandatory Requirement: Processing requires models.</strong>
-                  <div style={{ marginTop: 3 }}>
-                    Deleting foundation models frees disk space (~720 MB). However, imagery upload and analysis cannot proceed until the models are downloaded again.
+                  <div className="text-xs font-bold text-slate-800">{m.name}</div>
+                  <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                    <span>{m.task}</span>
+                    <span>•</span>
+                    <span>{m.size}</span>
                   </div>
                 </div>
+                <div>
+                  {m.cached ? (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="h-7 w-7 rounded-md"
+                      onClick={() => handleDeleteModel(m.filename)}
+                      disabled={!!isDeletingModel}
+                      title={`Delete ${m.name}`}
+                    >
+                      <Trash2 className={`h-3.5 w-3.5 ${isDeletingModel === m.filename ? "animate-spin" : ""}`} />
+                    </Button>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] text-slate-400">
+                      Not Cached
+                    </Badge>
+                  )}
+                </div>
               </div>
-
-              <div className="modal-models-list">
-                {modelsList.map((m) => (
-                  <div key={m.filename} className="modal-model-item">
-                    <div>
-                      <div className="modal-model-name">{m.name}</div>
-                      <div className="modal-model-sub">
-                        <span>{m.task}</span>
-                        <span>•</span>
-                        <span>{m.size}</span>
-                      </div>
-                    </div>
-                    <div>
-                      {m.cached ? (
-                        <button
-                          type="button"
-                          className="btn-model-action danger"
-                          onClick={() => handleDeleteModel(m.filename)}
-                          disabled={!!isDeletingModel}
-                          title={`Delete ${m.name}`}
-                        >
-                          <Trash2 size={12} className={isDeletingModel === m.filename ? "spin" : ""} />
-                        </button>
-                      ) : (
-                        <span style={{ fontSize: "0.72rem", color: "var(--color-text-muted)" }}>Not Cached</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ padding: "8px 14px", fontSize: "0.8rem" }}
-                onClick={() => setShowDeleteModal(false)}
-                disabled={!!isDeletingModel}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn-danger-solid"
-                onClick={() => handleDeleteModel()}
-                disabled={!!isDeletingModel}
-              >
-                <Trash2 size={14} className={isDeletingModel === "all" ? "spin" : ""} />
-                <span>{isDeletingModel === "all" ? "Deleting All Weights..." : "Delete All Models"}</span>
-              </button>
-            </div>
+            ))}
           </div>
-        </div>
-      )}
+
+          <DialogFooter className="gap-2 sm:gap-0 mt-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={!!isDeletingModel}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={() => handleDeleteModel()}
+              disabled={!!isDeletingModel}
+            >
+              <Trash2 className={`h-3.5 w-3.5 ${isDeletingModel === "all" ? "animate-spin" : ""}`} />
+              <span>{isDeletingModel === "all" ? "Deleting All Weights..." : "Delete All Models"}</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
