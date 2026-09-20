@@ -26,6 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InfoTooltip } from "./InfoTooltip";
 import { CoralSegment, SummaryStats } from "../types";
 
 interface SegmentsTableProps {
