@@ -301,7 +301,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
         {/* Main Studio Canvas & Results with Guaranteed 24px (space-y-6) Rhythm */}
         <main className="flex-1 h-full overflow-y-auto min-h-0 bg-slate-50/50">
-          <div className="max-w-7xl mx-auto w-full p-6 space-y-6">
+          <div className="max-w-7xl mx-auto w-full p-6 flex flex-col gap-6">
             {/* Gallery Navigation Toolbar */}
             <PaginationBar
               currentIndex={currentIndex}

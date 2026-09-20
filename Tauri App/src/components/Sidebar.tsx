@@ -130,9 +130,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span>Inference Parameters</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="space-y-4 pt-1 pb-4">
+            <AccordionContent className="flex flex-col gap-4 pt-1 pb-4">
               {inferenceSliders.map((s) => (
-                <div key={s.label} className="space-y-1.5">
+                <div key={s.label} className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-1.5 font-medium text-slate-700">
                       <span>{s.label}</span>
@@ -153,7 +153,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ))}
 
               {/* Min Mask Area */}
-              <div className="space-y-1.5">
+              <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-1.5 font-medium text-slate-700">
                     <span>Min Mask Area</span>
@@ -181,7 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       const v = parseInt(e.target.value, 10);
                       if (!isNaN(v)) onMinAreaPxChange(Math.max(10, Math.min(50000, v)));
                     }}
-                    className="h-8 text-center font-mono text-xs"
+                    className="h-8 text-center font-mono text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <Button
                     type="button"
@@ -205,9 +205,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span>Display Controls</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="space-y-4 pt-1 pb-4">
+            <AccordionContent className="flex flex-col gap-4 pt-1 pb-4">
               {/* Layout Mode */}
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Layout</div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {LAYOUT_OPTIONS.map((id) => (
@@ -228,9 +228,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               {/* Color Mode */}
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Color Mode</div>
-                <RadioGroup value={colorMode} onValueChange={onColorModeChange} className="gap-2.5">
+                <RadioGroup value={colorMode} onValueChange={onColorModeChange} className="flex flex-col gap-2">
                   {COLOR_MODES.map((m) => (
                     <div key={m.id} className="flex items-center space-x-2">
                       <RadioGroupItem value={m.id} id={`color-${m.id}`} />
@@ -243,7 +243,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               {/* Overlay Opacity */}
-              <div className="space-y-1.5">
+              <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between text-xs font-medium text-slate-700">
                   <span>Overlay Opacity</span>
                   <span className="font-mono text-[11px] font-semibold text-[#0d7c85] bg-teal-50 px-1.5 py-0.5 rounded">
@@ -254,7 +254,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               {/* Annotations */}
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Annotations</div>
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="flex items-center space-x-2">
@@ -273,7 +273,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
 
               {/* Highlight Coral */}
-              <div className="space-y-1.5">
+              <div className="flex flex-col gap-1.5">
                 <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Highlight Coral</div>
                 <Select
                   value={selectedMaskId !== null ? String(selectedMaskId) : "all"}
@@ -303,8 +303,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span>Compute Engine</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent className="space-y-3 pt-1 pb-4">
-              <div className="space-y-1.5">
+            <AccordionContent className="flex flex-col gap-3 pt-1 pb-4">
+              <div className="flex flex-col gap-1.5">
                 <Label className="text-xs text-slate-600 font-medium">Device Preference</Label>
                 <Select value={devicePreference} onValueChange={onDevicePreferenceChange}>
                   <SelectTrigger className="h-8 text-xs bg-white">
