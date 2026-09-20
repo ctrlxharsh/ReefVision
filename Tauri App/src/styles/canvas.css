@@ -14,8 +14,11 @@
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
-  padding: 1.25rem 1.5rem 4.5rem 1.5rem;
+  padding: 1.5rem 1.5rem 5rem 1.5rem;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 /* Side-by-Side Canvas Grid */

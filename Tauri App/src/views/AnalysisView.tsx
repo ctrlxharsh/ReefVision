@@ -313,7 +313,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
         {/* Main Studio Canvas & Results */}
         <main className="main-view">
-          <div className="block-container space-y-6">
+          <div className="block-container">
             {analysisError && (
               <div
                 style={{

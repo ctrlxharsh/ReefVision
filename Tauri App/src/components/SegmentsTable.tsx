@@ -16,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThreeDotsLoader } from "./ThreeDotsLoader";
 import { CoralSegment, SummaryStats } from "../types";
@@ -164,42 +163,42 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
   });
 
   return (
-    <Card>
-      {/* Card Header with Title and Metadata */}
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-3">
+      {/* Section Header with Title and Metadata */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <Layers className="h-5 w-5 text-[#0d7c85]" />
-            <CardTitle className="text-base font-semibold">
+            <span className="text-base font-bold text-[#0f1e4a]">
               Detected Coral Segments Breakdown
-            </CardTitle>
+            </span>
           </div>
-          <CardDescription className="mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             Dense instance boundaries, taxonomy identification, and health status
-          </CardDescription>
+          </p>
         </div>
 
         {/* Metadata Badges */}
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline" className="font-mono text-xs">
-            <span className="text-muted-foreground mr-1">Resolution:</span>
+          <Badge variant="outline" className="font-mono text-xs bg-white text-slate-600 border-slate-200">
+            <span className="text-slate-400 mr-1">Resolution:</span>
             {stats.image_resolution && stats.image_resolution !== "0x0"
               ? stats.image_resolution.replace("x", " × ")
               : "2048 × 1024"}
           </Badge>
-          <Badge variant="outline" className="font-mono text-xs">
-            <span className="text-muted-foreground mr-1">Coverage:</span>
+          <Badge variant="outline" className="font-mono text-xs bg-white text-slate-600 border-slate-200">
+            <span className="text-slate-400 mr-1">Coverage:</span>
             <span className="text-[#0d7c85] font-semibold">{stats.coral_coverage_pct}%</span>
-            <span className="text-muted-foreground ml-1">({stats.coral_covered_pixels.toLocaleString("en-US")} px)</span>
+            <span className="text-slate-400 ml-1">({stats.coral_covered_pixels.toLocaleString("en-US")} px)</span>
           </Badge>
           <Badge variant="coral" className="text-xs">
             {stats.total_corals_detected} Instances
           </Badge>
         </div>
-      </CardHeader>
+      </div>
 
-      {/* Card Content with Table or Loading/Empty State */}
-      <CardContent>
+      {/* Table Frame Container */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
         {isLoading && segments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
             <Layers className="h-8 w-8 text-[#0d7c85] animate-pulse mb-2" />
@@ -222,7 +221,7 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
             </p>
           </div>
         ) : (
-          <div className="rounded-md border max-h-[440px] overflow-auto">
+          <div className="overflow-x-auto max-h-[440px] overflow-y-auto">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -290,7 +289,7 @@ export const SegmentsTable: React.FC<SegmentsTableProps> = ({
             </Table>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
