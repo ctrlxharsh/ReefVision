@@ -72,6 +72,15 @@ FOUNDATION_MODEL_SPECS = [
 ]
 EXPECTED_MODELS = FOUNDATION_MODEL_SPECS
 
+MODEL_GROUPS: Dict[str, List[str]] = {
+    "sam": [HF_SAM_ENCODER_FILE, HF_SAM_DECODER_FILE],
+    "segmentation": [HF_SAM_ENCODER_FILE, HF_SAM_DECODER_FILE],
+    "bioclip": [HF_BIOCLIP_FILE, HF_TAXONOMY_FILE],
+    "taxonomy": [HF_BIOCLIP_FILE, HF_TAXONOMY_FILE],
+    "bleaching": [HF_BLEACHING_FILE],
+    "bleach": [HF_BLEACHING_FILE],
+}
+
 
 def get_cached_model_path(filename: str) -> Optional[str]:
     """
@@ -219,7 +228,13 @@ def download_all_models(
 
     specs = FOUNDATION_MODEL_SPECS
     if target_files:
-        filtered = [s for s in specs if s["filename"] in target_files]
+        expanded_targets = []
+        for t in target_files:
+            if t in MODEL_GROUPS:
+                expanded_targets.extend(MODEL_GROUPS[t])
+            else:
+                expanded_targets.append(t)
+        filtered = [s for s in specs if s["filename"] in expanded_targets]
         if filtered:
             specs = filtered
 
@@ -282,7 +297,13 @@ def delete_model_weights(target_files: Optional[List[str]] = None) -> Dict[str, 
         is_delete_all = True
         targets = list(all_filenames)
     else:
-        targets = [f for f in target_files if f in all_filenames]
+        expanded_targets = []
+        for t in target_files:
+            if t in MODEL_GROUPS:
+                expanded_targets.extend(MODEL_GROUPS[t])
+            else:
+                expanded_targets.append(t)
+        targets = [f for f in expanded_targets if f in all_filenames]
         if set(targets) == set(all_filenames):
             is_delete_all = True
 

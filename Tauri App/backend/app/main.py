@@ -165,7 +165,12 @@ def trigger_model_download(
         return {"status": "in_progress", "progress": _DOWNLOAD_PROGRESS}
 
     force = req.force if req else False
-    target_filename = req.filename if req else None
+    target_files = None
+    if req:
+        if req.filenames:
+            target_files = list(req.filenames)
+        elif req.filename:
+            target_files = [req.filename]
 
     _DOWNLOAD_PROGRESS = {
         "is_downloading": True,
@@ -189,23 +194,31 @@ def trigger_model_download(
                     "detail": f"{curr_mb:.1f} MB / {tot_mb:.1f} MB ({pct}%)",
                 })
 
-            target_files = [target_filename] if target_filename else None
             download_all_models(
                 progress_callback=_cb,
                 force_download=force,
                 target_files=target_files,
             )
 
-            # Warm up sessions
-            load_coralscop_model(device=_ACTIVE_DEVICE_PREF)
-            load_bioclip_model(device=_ACTIVE_DEVICE_PREF)
-            load_bleaching_model(device=_ACTIVE_DEVICE_PREF)
+            # Warm up sessions for available models
+            try:
+                load_coralscop_model(device=_ACTIVE_DEVICE_PREF)
+            except Exception:
+                pass
+            try:
+                load_bioclip_model(device=_ACTIVE_DEVICE_PREF)
+            except Exception:
+                pass
+            try:
+                load_bleaching_model(device=_ACTIVE_DEVICE_PREF)
+            except Exception:
+                pass
 
             _DOWNLOAD_PROGRESS.update({
                 "is_downloading": False,
                 "overall_pct": 100,
-                "current_file": "All Models Ready",
-                "detail": "Weights downloaded and inference engines initialized",
+                "current_file": "Download Complete",
+                "detail": "Requested model weights downloaded and verified",
             })
         except Exception as e:
             _DOWNLOAD_PROGRESS.update({
@@ -222,8 +235,14 @@ def trigger_model_download(
 def delete_model_endpoint(req: Optional[ModelDeleteRequest] = None):
     """Deletes one or all downloaded foundation models and frees disk space."""
     target_files = None
-    if req and req.filename and not req.all:
-        target_files = [req.filename]
+    target_label = "all models"
+    if req and not req.all:
+        if req.filenames:
+            target_files = list(req.filenames)
+            target_label = ", ".join(req.filenames)
+        elif req.filename:
+            target_files = [req.filename]
+            target_label = req.filename
 
     result = delete_model_weights(target_files=target_files)
 
@@ -234,7 +253,7 @@ def delete_model_endpoint(req: Optional[ModelDeleteRequest] = None):
 
     return {
         "status": "success",
-        "message": f"Successfully deleted {'all models' if (not req or req.all or not req.filename) else req.filename}",
+        "message": f"Successfully deleted {target_label}",
         "deleted_files": result["deleted_files"],
         "freed_bytes": result["freed_bytes"],
         "all_downloaded": result["all_downloaded"],

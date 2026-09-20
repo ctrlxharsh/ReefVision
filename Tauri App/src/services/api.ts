@@ -27,23 +27,39 @@ export async function getModelsStatus(): Promise<ModelStatusResponse> {
   return res.json();
 }
 
-export async function triggerModelDownload(force: boolean = false, filename?: string): Promise<void> {
+export async function triggerModelDownload(
+  force: boolean = false,
+  target?: string | string[]
+): Promise<void> {
+  const body: any = { force };
+  if (Array.isArray(target)) {
+    body.filenames = target;
+  } else if (target) {
+    body.filename = target;
+  }
   const res = await fetch(`${API_BASE}/models/download`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ force, filename }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error("Failed to start model download");
 }
 
-export async function deleteModel(filename?: string): Promise<ModelDeleteResponse> {
+export async function deleteModel(
+  target?: string | string[]
+): Promise<ModelDeleteResponse> {
+  let body: any;
+  if (!target) {
+    body = { all: true };
+  } else if (Array.isArray(target)) {
+    body = { filenames: target, all: false };
+  } else {
+    body = { filename: target, all: false };
+  }
   const res = await fetch(`${API_BASE}/models/delete`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      filename: filename || null,
-      all: !filename,
-    }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

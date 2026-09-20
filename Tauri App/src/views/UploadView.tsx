@@ -452,27 +452,31 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                   <CheckCircle2 size={13} className="ready-icon" />
                   <span>Foundation Models Ready</span>
                 </div>
-                <div className="models-header-actions">
-                  <button
+                <div className="flex items-center gap-2">
+                  <Button
                     type="button"
-                    className="btn-redownload"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-[11px] font-semibold gap-1.5 border-slate-200"
                     onClick={() => handleStartDownload(true)}
                     disabled={downloadProgress.is_downloading || !!isDeletingModel}
                     title="Force re-download all model weights from Hugging Face"
                   >
-                    <RotateCcw size={12} className={downloadProgress.is_downloading ? "spin" : ""} />
+                    <RotateCcw className={`h-3 w-3 ${downloadProgress.is_downloading ? "animate-spin" : ""}`} />
                     <span>{downloadProgress.is_downloading ? "Re-downloading..." : "Re-download"}</span>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
-                    className="btn-delete-models"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-[11px] font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 gap-1.5"
                     onClick={() => setShowDeleteModal(true)}
                     disabled={downloadProgress.is_downloading || !!isDeletingModel}
                     title="Manage and delete downloaded model weights"
                   >
-                    <Trash2 size={12} />
+                    <Trash2 className="h-3 w-3" />
                     <span>Delete</span>
-                  </button>
+                  </Button>
                 </div>
               </div>
 

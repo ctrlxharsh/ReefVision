@@ -1,5 +1,6 @@
 import React from "react";
 import { ChevronLeft, ChevronRight, FileImage } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface PaginationBarProps {
   currentIndex: number;
@@ -18,142 +19,118 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
   onNext,
   onSelectPage,
 }) => {
-  // Preceding pages (indices strictly before currentIndex)
-  const prevPages = Array.from({ length: currentIndex }, (_, i) => i);
+  // Generate page numbers to display with smart windowing
+  const renderPageChips = () => {
+    if (totalImages <= 1) return null;
 
-  // Succeeding pages (indices strictly after currentIndex)
-  const nextPages = Array.from(
-    { length: Math.max(0, totalImages - currentIndex - 1) },
-    (_, i) => currentIndex + 1 + i
-  );
+    let pages: (number | "ellipsis")[] = [];
 
-  const renderChips = (pages: number[], isLeading: boolean) => {
-    if (pages.length <= 5) {
-      return pages.map((pageIdx) => (
-        <button
-          key={pageIdx}
-          type="button"
-          className="gallery-page-chip"
-          onClick={() => onSelectPage(pageIdx)}
-          title={`Go to image ${pageIdx + 1}`}
-        >
-          {pageIdx + 1}
-        </button>
-      ));
-    }
-
-    // If more than 5 pages, use windowing with ellipsis
-    if (isLeading) {
-      const first = pages[0];
-      const tail = pages.slice(-2);
-      return (
-        <>
-          <button
-            type="button"
-            className="gallery-page-chip"
-            onClick={() => onSelectPage(first)}
-            title={`Go to image ${first + 1}`}
-          >
-            {first + 1}
-          </button>
-          <span className="gallery-page-ellipsis">•••</span>
-          {tail.map((pageIdx) => (
-            <button
-              key={pageIdx}
-              type="button"
-              className="gallery-page-chip"
-              onClick={() => onSelectPage(pageIdx)}
-              title={`Go to image ${pageIdx + 1}`}
-            >
-              {pageIdx + 1}
-            </button>
-          ))}
-        </>
-      );
+    if (totalImages <= 8) {
+      pages = Array.from({ length: totalImages }, (_, i) => i);
     } else {
-      const head = pages.slice(0, 2);
-      const last = pages[pages.length - 1];
-      return (
-        <>
-          {head.map((pageIdx) => (
-            <button
-              key={pageIdx}
-              type="button"
-              className="gallery-page-chip"
-              onClick={() => onSelectPage(pageIdx)}
-              title={`Go to image ${pageIdx + 1}`}
-            >
-              {pageIdx + 1}
-            </button>
-          ))}
-          <span className="gallery-page-ellipsis">•••</span>
-          <button
-            type="button"
-            className="gallery-page-chip"
-            onClick={() => onSelectPage(last)}
-            title={`Go to image ${last + 1}`}
-          >
-            {last + 1}
-          </button>
-        </>
-      );
+      // Windowing for large datasets
+      const left = Math.max(0, currentIndex - 2);
+      const right = Math.min(totalImages - 1, currentIndex + 2);
+
+      pages.push(0);
+      if (left > 1) pages.push("ellipsis");
+
+      for (let i = Math.max(1, left); i <= Math.min(totalImages - 2, right); i++) {
+        pages.push(i);
+      }
+
+      if (right < totalImages - 2) pages.push("ellipsis");
+      pages.push(totalImages - 1);
     }
+
+    return (
+      <div className="flex items-center gap-1">
+        {pages.map((p, idx) => {
+          if (p === "ellipsis") {
+            return (
+              <span
+                key={`ellipsis-${idx}`}
+                className="px-1 text-xs text-slate-400 select-none"
+              >
+                •••
+              </span>
+            );
+          }
+          const isActive = p === currentIndex;
+          return (
+            <button
+              key={p}
+              type="button"
+              onClick={() => onSelectPage(p)}
+              className={`h-7 min-w-[28px] px-1.5 rounded-md text-xs font-mono font-semibold transition-all ${
+                isActive
+                  ? "bg-[#0d7c85] text-white shadow-xs"
+                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+              }`}
+              title={`Go to image ${p + 1}`}
+            >
+              {p + 1}
+            </button>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
-    <nav className="gallery-nav-bar" aria-label="Image Navigation">
-      {/* Left Wing: Extreme Previous Button + Leading Page Chips */}
-      <div className="gallery-nav-wing left">
-        <button
+    <nav
+      className="flex items-center justify-between w-full py-1 mb-3.5 gap-3"
+      aria-label="Image Navigation"
+    >
+      {/* Left: Previous Button */}
+      <div className="flex items-center">
+        <Button
           type="button"
-          className="gallery-nav-btn prev"
+          variant="outline"
+          size="sm"
           onClick={onPrev}
           disabled={currentIndex === 0}
           title="Previous image (←)"
+          className="h-8 px-3 border-slate-200 text-slate-700 hover:text-[#0d7c85] hover:border-[#0d7c85] font-semibold text-xs"
         >
-          <ChevronLeft size={16} />
+          <ChevronLeft className="h-4 w-4" />
           <span>Previous</span>
-        </button>
-
-        {prevPages.length > 0 && (
-          <div className="gallery-chips-group leading">
-            {renderChips(prevPages, true)}
-          </div>
-        )}
+        </Button>
       </div>
 
-      {/* Center: Current Image Label (Pill) - Always Centered */}
-      <div className="gallery-nav-center">
-        <div className="gallery-file-pill">
-          <FileImage size={14} className="gallery-file-icon" />
-          <span className="gallery-filename" title={currentImageName}>
+      {/* Center: Current Image Badge */}
+      <div className="flex items-center justify-center min-w-0">
+        <div className="inline-flex items-center gap-2 bg-white border border-slate-200/90 shadow-xs px-3.5 py-1.5 rounded-full text-xs max-w-full">
+          <FileImage className="h-3.5 w-3.5 text-[#0d7c85] shrink-0" />
+          <span
+            className="font-mono font-semibold text-[#0f1e4a] truncate max-w-[240px]"
+            title={currentImageName}
+          >
             {currentImageName}
           </span>
-          <span className="gallery-divider">•</span>
-          <span className="gallery-counter">
-            Image <strong>{currentIndex + 1}</strong> of {totalImages}
+          <span className="text-slate-300">•</span>
+          <span className="text-slate-500 shrink-0 font-medium">
+            Image <strong className="text-[#0d7c85]">{currentIndex + 1}</strong> of {totalImages}
           </span>
         </div>
       </div>
 
-      {/* Right Wing: Trailing Page Chips + Extreme Next Button */}
-      <div className="gallery-nav-wing right">
-        {nextPages.length > 0 && (
-          <div className="gallery-chips-group trailing">
-            {renderChips(nextPages, false)}
-          </div>
-        )}
+      {/* Right: Page Chips + Next Button */}
+      <div className="flex items-center gap-2">
+        {renderPageChips()}
 
-        <button
+        <Button
           type="button"
-          className="gallery-nav-btn next"
+          variant="outline"
+          size="sm"
           onClick={onNext}
-          disabled={currentIndex === totalImages - 1}
+          disabled={currentIndex >= totalImages - 1}
           title="Next image (→)"
+          className="h-8 px-3 border-slate-200 text-slate-700 hover:text-[#0d7c85] hover:border-[#0d7c85] font-semibold text-xs"
         >
           <span>Next</span>
-          <ChevronRight size={16} />
-        </button>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
     </nav>
   );

@@ -36,11 +36,13 @@ class ModelStatusResponse(BaseModel):
 
 class ModelDownloadRequest(BaseModel):
     force: bool = Field(default=False, description="Force re-download from Hugging Face even if cached")
-    filename: Optional[str] = Field(default=None, description="Specific model filename or None for all models")
+    filename: Optional[str] = Field(default=None, description="Specific model filename or group key")
+    filenames: Optional[List[str]] = Field(default=None, description="List of model filenames or group keys")
 
 
 class ModelDeleteRequest(BaseModel):
-    filename: Optional[str] = Field(default=None, description="Specific model filename to delete, or None to delete all")
+    filename: Optional[str] = Field(default=None, description="Specific model filename or group key to delete")
+    filenames: Optional[List[str]] = Field(default=None, description="List of filenames or group keys to delete")
     all: bool = Field(default=False, description="Whether to delete all models")
 
 

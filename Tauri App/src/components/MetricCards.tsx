@@ -18,15 +18,15 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
   const coveragePercent = stats.coral_coverage_pct || 0;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 my-3.5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 my-3">
       {/* Card 1: Corals Detected */}
-      <Card className="border-t-[3px] border-t-[#0d7c85] p-4.5 flex flex-col justify-between transition-all hover:shadow-md">
+      <Card className="border-t-[3px] border-t-[#0d7c85] p-4 flex flex-col justify-between transition-all hover:shadow-sm">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Corals Detected
           </span>
-          <div className="h-8 w-8 rounded-lg bg-teal-50 text-[#0d7c85] flex items-center justify-center">
-            <Target className="h-4 w-4" />
+          <div className="h-7 w-7 rounded-md bg-teal-50 text-[#0d7c85] flex items-center justify-center">
+            <Target className="h-3.5 w-3.5" />
           </div>
         </div>
         <div className="text-2xl font-extrabold text-[#0f1e4a] my-2 font-mono">
@@ -51,13 +51,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       </Card>
 
       {/* Card 2: Reef Coverage */}
-      <Card className="border-t-[3px] border-t-emerald-600 p-4.5 flex flex-col justify-between transition-all hover:shadow-md">
+      <Card className="border-t-[3px] border-t-emerald-600 p-4 flex flex-col justify-between transition-all hover:shadow-sm">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Reef Coverage
           </span>
-          <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <Waves className="h-4 w-4" />
+          <div className="h-7 w-7 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <Waves className="h-3.5 w-3.5" />
           </div>
         </div>
         <div className="text-2xl font-extrabold text-emerald-600 my-2 font-mono">
@@ -70,10 +70,10 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
         <div className="mt-auto space-y-1.5">
           <Progress
             value={isLoading ? 0 : Math.min(coveragePercent, 100)}
-            className="h-1.5 bg-slate-100"
+            className="h-2 bg-slate-100"
             indicatorColor="bg-emerald-500"
           />
-          <div className="text-[11px] text-slate-400 font-mono">
+          <div className="text-[11px] text-slate-500 font-mono font-medium">
             {isLoading
               ? "Calculating area..."
               : stats.coral_covered_pixels > 0
@@ -84,13 +84,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       </Card>
 
       {/* Card 3: Avg IoU Confidence */}
-      <Card className="border-t-[3px] border-t-sky-600 p-4.5 flex flex-col justify-between transition-all hover:shadow-md">
+      <Card className="border-t-[3px] border-t-sky-600 p-4 flex flex-col justify-between transition-all hover:shadow-sm">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Avg IoU Confidence
           </span>
-          <div className="h-8 w-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
-            <Crosshair className="h-4 w-4" />
+          <div className="h-7 w-7 rounded-md bg-sky-50 text-sky-600 flex items-center justify-center">
+            <Crosshair className="h-3.5 w-3.5" />
           </div>
         </div>
         <div className="text-2xl font-extrabold text-sky-600 my-2 font-mono">
@@ -115,13 +115,13 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
       </Card>
 
       {/* Card 4: Avg Stability Score */}
-      <Card className="border-t-[3px] border-t-indigo-600 p-4.5 flex flex-col justify-between transition-all hover:shadow-md">
+      <Card className="border-t-[3px] border-t-indigo-600 p-4 flex flex-col justify-between transition-all hover:shadow-sm">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
             Avg Stability Score
           </span>
-          <div className="h-8 w-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <ShieldCheck className="h-4 w-4" />
+          <div className="h-7 w-7 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <ShieldCheck className="h-3.5 w-3.5" />
           </div>
         </div>
         <div className="text-2xl font-extrabold text-indigo-600 my-2 font-mono">
