@@ -102,7 +102,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
 
   return (
     <nav className="gallery-nav-bar" aria-label="Image Navigation">
-      {/* Left Wing: Extreme Previous Button + Preceding Page Chips */}
+      {/* Left Wing: Extreme Previous Button */}
       <div className="gallery-nav-wing left">
         <button
           type="button"
@@ -114,16 +114,16 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
           <ChevronLeft size={16} />
           <span>Previous</span>
         </button>
+      </div>
 
+      {/* Center: Preceding Page Chips + Current Image Breadcrumb + Succeeding Page Chips */}
+      <div className="gallery-nav-center">
         {prevPages.length > 0 && (
-          <div className="gallery-chips-group">
+          <div className="gallery-chips-group leading">
             {renderChips(prevPages, true)}
           </div>
         )}
-      </div>
 
-      {/* Center: Anchor Image Breadcrumb / File Pill */}
-      <div className="gallery-nav-center">
         <div className="gallery-file-pill">
           <FileImage size={14} className="gallery-file-icon" />
           <span className="gallery-filename" title={currentImageName}>
@@ -134,16 +134,16 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
             Image <strong>{currentIndex + 1}</strong> of {totalImages}
           </span>
         </div>
-      </div>
 
-      {/* Right Wing: Succeeding Page Chips + Extreme Next Button */}
-      <div className="gallery-nav-wing right">
         {nextPages.length > 0 && (
-          <div className="gallery-chips-group">
+          <div className="gallery-chips-group trailing">
             {renderChips(nextPages, false)}
           </div>
         )}
+      </div>
 
+      {/* Right Wing: Extreme Next Button */}
+      <div className="gallery-nav-wing right">
         <button
           type="button"
           className="gallery-nav-btn next"
