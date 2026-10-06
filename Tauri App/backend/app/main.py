@@ -39,7 +39,8 @@ from core.models import (
 from core.segmentation import run_segmentation
 from core.taxonomy import enrich_masks_with_taxonomy_and_bleaching
 from core.visualization import create_segmentation_overlay, generate_distinct_colors
-from core.export import build_coco_json
+from core.export import build_coco_json, create_coco_dataset_zip
+from core.batch import BatchProcessor
 
 from app.schemas import (
     DevicePreferenceRequest,
@@ -52,6 +53,9 @@ from app.schemas import (
     OverlayRequest,
     ExportCocoRequest,
     SampleItem,
+    BatchStartRequest,
+    BatchPrioritizeRequest,
+    BatchStatusResponse,
 )
 
 app = FastAPI(
@@ -73,7 +77,9 @@ app.add_middleware(
 _IMAGE_STORE: Dict[str, Image.Image] = {}
 _BASE_SEG_CACHE: Dict[str, List[Dict[str, Any]]] = {}
 _ENRICH_CACHE: Dict[str, Any] = {}
+_OVERLAY_CACHE: Dict[str, str] = {}
 _ACTIVE_DEVICE_PREF: str = "auto"
+_DEFAULT_CONCURRENCY: int = 1
 _SEG_LOCKS: Dict[str, threading.Lock] = {}
 _SEG_LOCKS_MUTEX = threading.Lock()
 
@@ -84,6 +90,18 @@ def _get_seg_lock(cache_key: str) -> threading.Lock:
             _SEG_LOCKS[cache_key] = threading.Lock()
         return _SEG_LOCKS[cache_key]
 
+
+# Initialize global background BatchProcessor
+_BATCH_PROCESSOR = BatchProcessor(
+    image_store=_IMAGE_STORE,
+    base_seg_cache=_BASE_SEG_CACHE,
+    enrich_cache=_ENRICH_CACHE,
+    overlay_cache=_OVERLAY_CACHE,
+    model_loader_sam=load_coralscop_model,
+    model_loader_bioclip=load_bioclip_model,
+    model_loader_bleaching=load_bleaching_model,
+    get_active_device=lambda: _ACTIVE_DEVICE_PREF,
+)
 
 _DOWNLOAD_PROGRESS: Dict[str, Any] = {
     "is_downloading": False,
@@ -129,10 +147,14 @@ def get_device():
 
 @app.post("/api/device/select")
 def select_device(req: DevicePreferenceRequest):
-    """Updates device preference (auto, cuda, cpu)."""
-    global _ACTIVE_DEVICE_PREF
+    """Updates device preference (auto, cuda, cpu) and batch concurrency."""
+    global _ACTIVE_DEVICE_PREF, _DEFAULT_CONCURRENCY
     _ACTIVE_DEVICE_PREF = req.preference.lower().strip()
-    return get_device_info(_ACTIVE_DEVICE_PREF)
+    if req.concurrency:
+        _DEFAULT_CONCURRENCY = max(1, min(int(req.concurrency), 4))
+    info = get_device_info(_ACTIVE_DEVICE_PREF)
+    info["concurrency"] = _DEFAULT_CONCURRENCY
+    return info
 
 
 @app.get("/api/models/status")
@@ -246,10 +268,12 @@ def delete_model_endpoint(req: Optional[ModelDeleteRequest] = None):
 
     result = delete_model_weights(target_files=target_files)
 
-    # Invalidate in-memory inference caches
+    # Invalidate in-memory inference caches and cancel any active batch
+    _BATCH_PROCESSOR.cancel_batch()
     with _SEG_LOCKS_MUTEX:
         _BASE_SEG_CACHE.clear()
         _ENRICH_CACHE.clear()
+        _OVERLAY_CACHE.clear()
 
     return {
         "status": "success",
@@ -628,3 +652,260 @@ def export_csv(req: ExportCocoRequest):
     df = pd.DataFrame(df_records)
     csv_str = df.to_csv(index=False)
     return Response(content=csv_str, media_type="text/csv")
+
+
+# ---------------------------------------------------------
+# Background Bulk Processing & Structured Dataset Endpoints
+# ---------------------------------------------------------
+
+@app.post("/api/batch/start")
+def start_batch_processing(req: BatchStartRequest):
+    """Starts background bulk processing of multiple images."""
+    all_ready, _ = check_models_download_status()
+    if not all_ready:
+        raise HTTPException(
+            status_code=428,
+            detail="Foundation models are missing or deleted. Please download all models before starting batch processing.",
+        )
+
+    # Ensure all requested images are registered in memory
+    dirs = _resolve_demo_dirs()
+    for img_name in req.images:
+        if img_name not in _IMAGE_STORE:
+            found = False
+            for sdir in dirs:
+                target = os.path.join(sdir, img_name)
+                if os.path.isfile(target):
+                    _IMAGE_STORE[img_name] = Image.open(target).convert("RGB")
+                    found = True
+                    break
+            if not found:
+                raise HTTPException(status_code=404, detail=f"Image '{img_name}' not loaded in session")
+
+    params = {
+        "points_per_side": req.points_per_side,
+        "iou_thresh": req.iou_thresh,
+        "stability_thresh": req.stability_thresh,
+        "min_area_px": req.min_area_px,
+    }
+    concurrency = req.concurrency if req.concurrency else _DEFAULT_CONCURRENCY
+
+    return _BATCH_PROCESSOR.start_batch(
+        images=req.images,
+        params=params,
+        concurrency=concurrency,
+    )
+
+
+@app.get("/api/batch/status")
+def get_batch_status():
+    """Polls real-time bulk processing progress across all images."""
+    return _BATCH_PROCESSOR.get_status()
+
+
+@app.post("/api/batch/pause")
+def pause_batch_processing():
+    """Pauses background batch processing."""
+    return _BATCH_PROCESSOR.pause_batch()
+
+
+@app.post("/api/batch/resume")
+def resume_batch_processing():
+    """Resumes background batch processing."""
+    return _BATCH_PROCESSOR.resume_batch()
+
+
+@app.post("/api/batch/cancel")
+def cancel_batch_processing():
+    """Cancels remaining pending images in the active batch."""
+    return _BATCH_PROCESSOR.cancel_batch()
+
+
+@app.post("/api/batch/prioritize")
+def prioritize_batch_image(req: BatchPrioritizeRequest):
+    """Bumps a specific image to the front of the background processing queue."""
+    prioritized = _BATCH_PROCESSOR.prioritize_image(req.image_name)
+    return {"prioritized": prioritized, "image_name": req.image_name}
+
+
+@app.get("/api/analysis/result/{image_name}")
+def get_analysis_result(image_name: str):
+    """
+    Returns precomputed results (segments, stats, health, and overlay)
+    for a completed image, or its current background queue state.
+    """
+    # 1. Check BatchProcessor items
+    item = _BATCH_PROCESSOR.get_image_result(image_name)
+    if item and item.get("status") == "completed" and item.get("segments"):
+        return {
+            "status": "completed",
+            "image_name": image_name,
+            "corals_count": item.get("corals_count", 0),
+            "coverage_pct": item.get("coverage_pct", 0.0),
+            "bleaching_prevalence_pct": item.get("bleaching_prevalence_pct", 0.0),
+            "summary": item.get("summary"),
+            "segments": item.get("segments"),
+            "health_summary": item.get("health_summary"),
+            "scene_eval": item.get("scene_eval"),
+            "overlay_base64": item.get("overlay_base64"),
+        }
+
+    # 2. Check in-memory _ENRICH_CACHE directly if processed outside batch
+    matching_keys = [k for k in _ENRICH_CACHE.keys() if k.startswith(f"{image_name}_")]
+    if matching_keys:
+        enrich_cache_key = matching_keys[-1]
+        masks_info, full_image_eval, health_summary = _ENRICH_CACHE[enrich_cache_key]
+        pil_img = _IMAGE_STORE.get(image_name)
+        img_w = pil_img.width if pil_img else 1024
+        img_h = pil_img.height if pil_img else 768
+        total_pixels = img_w * img_h
+
+        union_mask = np.zeros((img_h, img_w), dtype=bool)
+        for m in masks_info:
+            seg = m.get("mask", m.get("segmentation"))
+            if seg is not None:
+                union_mask = np.logical_or(union_mask, seg)
+
+        coral_covered_pixels = int(np.sum(union_mask))
+        coral_coverage_pct = round((coral_covered_pixels / max(total_pixels, 1)) * 100.0, 2)
+        mean_iou = round(float(np.mean([m["predicted_iou"] for m in masks_info])), 4) if masks_info else 0.0
+        mean_stability = round(float(np.mean([m["stability_score"] for m in masks_info])), 4) if masks_info else 0.0
+
+        summary_stats = {
+            "total_corals_detected": len(masks_info),
+            "coral_coverage_pct": coral_coverage_pct,
+            "coral_covered_pixels": coral_covered_pixels,
+            "total_image_pixels": total_pixels,
+            "image_resolution": f"{img_w}x{img_h}",
+            "mean_iou_confidence": mean_iou,
+            "mean_stability_score": mean_stability,
+        }
+
+        table_records = []
+        for m in masks_info:
+            tax = m.get("taxonomy", {})
+            bl = m.get("bleaching", {})
+            cond_label = "Bleached" if bl.get("is_bleached") else "Healthy"
+            table_records.append({
+                "id": m["id"],
+                "id_str": f"#{m['id']}",
+                "genus": tax.get("genus", "Coral"),
+                "growth_form": tax.get("growth_form", "-"),
+                "taxon_conf": round(float(tax.get("confidence_pct", 0)), 1),
+                "condition": cond_label,
+                "condition_conf": round(float(bl.get("confidence_pct", 0)), 1),
+                "area_pct": m.get("area_pct", 0.0),
+                "area_px": m.get("area_px", m.get("area", 0)),
+                "predicted_iou": round(float(m["predicted_iou"]), 3),
+                "color_hex": m.get("color_hex", "#00cccc"),
+                "centroid": [int(v) for v in m["centroid"]] if m.get("centroid") else None,
+                "bbox": [int(v) for v in m["bbox"]] if m.get("bbox") else None,
+            })
+
+        overlay_b64 = _OVERLAY_CACHE.get(f"{image_name}_default")
+
+        return {
+            "status": "completed",
+            "image_name": image_name,
+            "corals_count": len(table_records),
+            "coverage_pct": coral_coverage_pct,
+            "bleaching_prevalence_pct": health_summary.get("bleaching_prevalence_pct", 0.0),
+            "summary": summary_stats,
+            "segments": table_records,
+            "health_summary": health_summary,
+            "scene_eval": full_image_eval,
+            "overlay_base64": overlay_b64,
+        }
+
+    # 3. Otherwise return current pending/processing state
+    return {
+        "status": item.get("status", "pending") if item else "pending",
+        "stage": item.get("stage", "pending") if item else "pending",
+        "image_name": image_name,
+        "error": item.get("error") if item else None,
+    }
+
+
+@app.get("/api/batch/export/coco-zip")
+def export_batch_coco_dataset():
+    """
+    Assembles and streams a complete structured dataset archive (.zip)
+    containing COCO JSON annotations, original images, summary.csv, and dataset_summary.json
+    for all images processed up to this point.
+    """
+    # Collect all processed image names
+    processed_names = _BATCH_PROCESSOR.get_processed_images_list()
+
+    # Also include any images from _ENRICH_CACHE
+    cached_names = set(k.split("_")[0] for k in _ENRICH_CACHE.keys())
+    all_target_names = list(dict.fromkeys(processed_names + [n for n in cached_names if n in _IMAGE_STORE]))
+
+    if not all_target_names:
+        raise HTTPException(
+            status_code=400,
+            detail="No images have finished processing yet. Please wait for at least one image to complete.",
+        )
+
+    processed_items = []
+    for name in all_target_names:
+        pil_img = _IMAGE_STORE.get(name)
+        w = pil_img.width if pil_img else 1024
+        h = pil_img.height if pil_img else 768
+
+        # Find raw enriched masks
+        matching_keys = [k for k in _ENRICH_CACHE.keys() if k.startswith(f"{name}_")]
+        if matching_keys:
+            masks_info, full_image_eval, health_summary = _ENRICH_CACHE[matching_keys[-1]]
+        else:
+            masks_info, full_image_eval, health_summary = [], {}, {}
+
+        batch_item = _BATCH_PROCESSOR.get_image_result(name) or {}
+        segments = batch_item.get("segments", [])
+        if not segments and masks_info:
+            # Reconstruct table segments
+            for m in masks_info:
+                tax = m.get("taxonomy", {})
+                bl = m.get("bleaching", {})
+                segments.append({
+                    "id": m["id"],
+                    "id_str": f"#{m['id']}",
+                    "genus": tax.get("genus", "Coral"),
+                    "growth_form": tax.get("growth_form", "-"),
+                    "taxon_conf": round(float(tax.get("confidence_pct", 0)), 1),
+                    "condition": "Bleached" if bl.get("is_bleached") else "Healthy",
+                    "condition_conf": round(float(bl.get("confidence_pct", 0)), 1),
+                    "area_pct": m.get("area_pct", 0.0),
+                    "area_px": m.get("area_px", m.get("area", 0)),
+                    "predicted_iou": round(float(m["predicted_iou"]), 3),
+                    "color_hex": m.get("color_hex", "#00cccc"),
+                    "centroid": [int(v) for v in m["centroid"]] if m.get("centroid") else None,
+                    "bbox": [int(v) for v in m["bbox"]] if m.get("bbox") else None,
+                })
+
+        processed_items.append({
+            "image_name": name,
+            "width": w,
+            "height": h,
+            "masks_info": masks_info,
+            "segments": segments,
+            "corals_count": len(segments),
+            "coverage_pct": batch_item.get("coverage_pct", 0.0),
+            "bleaching_prevalence_pct": batch_item.get("bleaching_prevalence_pct", health_summary.get("bleaching_prevalence_pct", 0.0)),
+            "summary": batch_item.get("summary", {}),
+            "health_summary": health_summary,
+            "scene_eval": full_image_eval,
+        })
+
+    zip_bytes = create_coco_dataset_zip(processed_items, _IMAGE_STORE)
+    timestamp_str = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"reefvision_coco_dataset_{timestamp_str}.zip"
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        },
+    )
+

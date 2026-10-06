@@ -6,6 +6,8 @@ interface PaginationBarProps {
   currentIndex: number;
   totalImages: number;
   currentImageName: string;
+  imageNames?: string[];
+  itemStatuses?: Record<string, "pending" | "processing" | "completed" | "error" | "cancelled">;
   onPrev: () => void;
   onNext: () => void;
   onSelectPage: (index: number) => void;
@@ -37,6 +39,8 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
   currentIndex,
   totalImages,
   currentImageName,
+  imageNames = [],
+  itemStatuses = {},
   onPrev,
   onNext,
   onSelectPage,
@@ -68,6 +72,57 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
   const leftPages = getLeftPages();
   const rightPages = getRightPages();
 
+  const renderPageButton = (p: number) => {
+    const imgName = imageNames[p];
+    const status = imgName ? itemStatuses[imgName] : undefined;
+    const isCurrent = p === currentIndex;
+
+    return (
+      <Button
+        key={p}
+        variant={isCurrent ? "secondary" : "ghost"}
+        size="sm"
+        onClick={() => onSelectPage(p)}
+        title={
+          imgName
+            ? `${imgName} (${status || "ready"})`
+            : `Image ${p + 1}`
+        }
+        className={`relative h-8 min-w-8 px-1.5 font-mono text-xs font-semibold rounded-md transition-all ${
+          isCurrent
+            ? "bg-primary/10 text-primary border border-primary/30 shadow-2xs font-bold"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+        }`}
+      >
+        <span>{p + 1}</span>
+        {status === "completed" && (
+          <span
+            className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-emerald-500 border border-background"
+            title="Processing completed"
+          />
+        )}
+        {status === "processing" && (
+          <span className="absolute -top-1 -right-1 flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500" />
+          </span>
+        )}
+        {status === "pending" && (
+          <span
+            className="absolute -top-1 -right-1 h-1.5 w-1.5 rounded-full bg-slate-300 border border-background"
+            title="Queued in background"
+          />
+        )}
+        {status === "error" && (
+          <span
+            className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 border border-background"
+            title="Inference error"
+          />
+        )}
+      </Button>
+    );
+  };
+
   return (
     <nav
       className="relative flex items-center justify-between w-full min-h-[48px] px-4 py-2 rounded-xl border border-border/80 bg-card shadow-xs select-none"
@@ -95,15 +150,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
               •••
             </span>
           ) : (
-            <Button
-              key={p}
-              variant="ghost"
-              size="sm"
-              onClick={() => onSelectPage(p)}
-              className="h-8 w-8 p-0 font-mono text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-            >
-              {p + 1}
-            </Button>
+            renderPageButton(p)
           )
         )}
       </div>
@@ -137,15 +184,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
               •••
             </span>
           ) : (
-            <Button
-              key={p}
-              variant="ghost"
-              size="sm"
-              onClick={() => onSelectPage(p)}
-              className="h-8 w-8 p-0 font-mono text-xs font-semibold rounded-md text-muted-foreground hover:text-foreground hover:bg-muted"
-            >
-              {p + 1}
-            </Button>
+            renderPageButton(p)
           )
         )}
 

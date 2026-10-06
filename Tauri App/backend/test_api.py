@@ -91,6 +91,72 @@ def test_endpoints():
     finally:
         app_main.check_models_download_status = orig_check
 
+    print("Testing /api/batch endpoints lifecycle...")
+    # Status
+    resp = client.get("/api/batch/status")
+    assert resp.status_code == 200, f"Batch status failed: {resp.text}"
+    b_status = resp.json()
+    assert "is_running" in b_status
+    print(f"  Initial batch status: running={b_status['is_running']}, total={b_status['total']}")
+
+    # Pause / Resume / Cancel
+    resp = client.post("/api/batch/pause")
+    assert resp.status_code == 200
+    resp = client.post("/api/batch/resume")
+    assert resp.status_code == 200
+    resp = client.post("/api/batch/cancel")
+    assert resp.status_code == 200
+
+    # Prioritize
+    resp = client.post("/api/batch/prioritize", json={"image_name": "sample.png"})
+    assert resp.status_code == 200
+    print("  Batch pause, resume, cancel, prioritize endpoints verified.")
+
+    # Export empty -> 400
+    resp = client.get("/api/batch/export/coco-zip")
+    assert resp.status_code in (400, 200)
+
+    # Test COCO dataset ZIP serialization directly
+    import io, zipfile
+    from PIL import Image
+    from core.export import create_coco_dataset_zip
+    mock_img = Image.new("RGB", (64, 64), color=(0, 100, 200))
+    mock_store = {"coral_test.png": mock_img}
+    mock_item = {
+        "image_name": "coral_test.png",
+        "width": 64,
+        "height": 64,
+        "masks_info": [],
+        "segments": [{
+            "id": 1,
+            "id_str": "#1",
+            "genus": "Acropora",
+            "growth_form": "Branching",
+            "taxon_conf": 95.0,
+            "condition": "Healthy",
+            "condition_conf": 90.0,
+            "area_pct": 12.5,
+            "area_px": 512,
+            "predicted_iou": 0.94,
+            "bbox": [10, 10, 20, 20],
+            "centroid": [20, 20],
+        }],
+        "corals_count": 1,
+        "coverage_pct": 12.5,
+        "bleaching_prevalence_pct": 0.0,
+        "summary": {},
+        "health_summary": {},
+        "scene_eval": {},
+    }
+    zip_bytes = create_coco_dataset_zip([mock_item], mock_store)
+    zf = zipfile.ZipFile(io.BytesIO(zip_bytes), "r")
+    namelist = zf.namelist()
+    assert "annotations/instances_default.json" in namelist
+    assert "summary.csv" in namelist
+    assert "dataset_summary.json" in namelist
+    assert "images/coral_test.png" in namelist
+    print(f"  COCO dataset zip verified with files: {namelist}")
+
     print("\nAll API endpoint unit tests PASSED successfully!")
 
 

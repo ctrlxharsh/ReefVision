@@ -12,6 +12,7 @@ export interface DeviceInfo {
   cpu_count?: number;
   preference?: string;
   priority?: string[];
+  concurrency?: number;
 }
 
 export interface ModelSpec {
@@ -102,5 +103,34 @@ export interface LoadedImage {
   height?: number;
 }
 
-export type AnalysisStage = "segmenting" | "classifying" | "rendering" | "idle";
+export type AnalysisStage = "segmenting" | "classifying" | "rendering" | "idle" | "pending";
 
+export interface BatchItemStatus {
+  image_name: string;
+  status: "pending" | "processing" | "completed" | "error" | "cancelled";
+  stage: string;
+  error?: string | null;
+  corals_count?: number;
+  coverage_pct?: number;
+  bleaching_prevalence_pct?: number;
+  summary?: SummaryStats | null;
+  segments?: CoralSegment[] | null;
+  health_summary?: HealthSummary | null;
+  scene_eval?: Record<string, any> | null;
+  overlay_base64?: string | null;
+}
+
+export interface BatchStatusResponse {
+  batch_id: string;
+  is_running: boolean;
+  is_paused: boolean;
+  concurrency: number;
+  total: number;
+  completed: number;
+  failed: number;
+  percent: number;
+  current_image: string | null;
+  current_stage: string;
+  images_order: string[];
+  items: Record<string, BatchItemStatus>;
+}

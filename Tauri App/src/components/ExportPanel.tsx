@@ -6,9 +6,10 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   Loader2,
+  FolderArchive,
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-import { exportCocoJson, exportCsvData } from "../services/api";
+import { exportCocoJson, exportCsvData, downloadBatchCocoZip } from "../services/api";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -87,6 +88,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
   hasSegments,
 }) => {
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingZip, setIsExportingZip] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
   const stem = imageName.replace(/\.[^/.]+$/, "");
 
@@ -122,6 +124,23 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
     }
   };
 
+  const handleExportDatasetZip = async () => {
+    setIsExportingZip(true);
+    try {
+      const res = await downloadBatchCocoZip();
+      if (res.success && res.path) {
+        setFeedbackMsg(`Full dataset exported: ${res.path.split(/[/\\]/).pop()}`);
+        setTimeout(() => setFeedbackMsg(null), 5000);
+      } else if (res.error) {
+        alert(`Dataset export error: ${res.error}`);
+      }
+    } catch (e: any) {
+      alert(`Export error: ${e?.message || e}`);
+    } finally {
+      setIsExportingZip(false);
+    }
+  };
+
   return (
     <Card className="border-border/80 bg-card shadow-sm rounded-xl overflow-hidden">
       <CardHeader className="py-4 px-6 border-b border-border/70 bg-card">
@@ -130,15 +149,15 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
           <span>Export & Data Inspector</span>
         </CardTitle>
         <CardDescription className="text-xs text-muted-foreground mt-0.5">
-          Save standard COCO annotations, high-resolution visual masks, and benthic census spreadsheets
+          Save standard COCO annotations, high-resolution visual masks, and complete multi-image dataset archives (.zip)
         </CardDescription>
       </CardHeader>
 
       <CardContent className="p-6 flex flex-col gap-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <Button
             variant="outline"
-            disabled={isExporting}
+            disabled={isExporting || isExportingZip}
             onClick={() =>
               handleExport(async () => {
                 const data = await exportCocoJson(imageName, minAreaPx);
@@ -162,7 +181,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
           <Button
             variant="outline"
-            disabled={isExporting || !overlayDataUrl}
+            disabled={isExporting || isExportingZip || !overlayDataUrl}
             onClick={() =>
               handleExport(async () => ({
                 name: `${stem}_overlay.png`,
@@ -184,7 +203,7 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
 
           <Button
             variant="outline"
-            disabled={isExporting || !hasSegments}
+            disabled={isExporting || isExportingZip || !hasSegments}
             onClick={() =>
               handleExport(async () => {
                 const csv = await exportCsvData(imageName, minAreaPx);
@@ -204,6 +223,20 @@ export const ExportPanel: React.FC<ExportPanelProps> = ({
               <FileSpreadsheet className="size-4 text-primary" />
             )}
             <span>Export Segments CSV</span>
+          </Button>
+
+          <Button
+            variant="default"
+            disabled={isExporting || isExportingZip}
+            onClick={handleExportDatasetZip}
+            className="h-10 text-xs font-bold gap-2 text-white bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 shadow-2xs transition-all"
+          >
+            {isExportingZip ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <FolderArchive className="size-4" />
+            )}
+            <span>Export Dataset (COCO .zip)</span>
           </Button>
         </div>
 

@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { AlertCircle } from "lucide-react";
+import {
+  AlertCircle,
+  Play,
+  Pause,
+  StopCircle,
+  FolderArchive,
+  Loader2,
+  CheckCircle2,
+} from "lucide-react";
 import { Sidebar } from "../components/Sidebar";
 import { TopBar } from "../components/TopBar";
 import { PaginationBar } from "../components/PaginationBar";
@@ -15,6 +23,7 @@ import {
   SummaryStats,
   HealthSummary,
   AnalysisStage,
+  BatchStatusResponse,
 } from "../types";
 import {
   runSegmentation,
@@ -22,6 +31,13 @@ import {
   renderOverlay,
   getDevice,
   setDevicePreference,
+  getBatchStatus,
+  pauseBatch,
+  resumeBatch,
+  cancelBatch,
+  prioritizeBatchImage,
+  getPrecomputedResult,
+  downloadBatchCocoZip,
 } from "../services/api";
 
 interface AnalysisViewProps {
@@ -77,7 +93,38 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
   });
   const [sceneEval, setSceneEval] = useState<Record<string, any>>({});
 
+  // Background Batch Tracking & Dataset Export
+  const [batchStatus, setBatchStatus] = useState<BatchStatusResponse | null>(null);
+  const [isExportingBatch, setIsExportingBatch] = useState<boolean>(false);
+  const [batchFeedback, setBatchFeedback] = useState<string | null>(null);
+
   const currentImage = images[currentIndex] || images[0];
+
+  // Poll batch status every 1000ms
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    let isSubscribed = true;
+
+    const poll = async () => {
+      try {
+        const res = await getBatchStatus();
+        if (isSubscribed) {
+          setBatchStatus(res);
+        }
+      } catch {
+        // silent
+      }
+      if (isSubscribed) {
+        timer = setTimeout(poll, 1000);
+      }
+    };
+
+    poll();
+    return () => {
+      isSubscribed = false;
+      clearTimeout(timer);
+    };
+  }, []);
 
   // Fetch initial device info
   useEffect(() => {
@@ -112,12 +159,46 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
     });
   }, [currentImage?.name]);
 
-  // Run Segmentation & Enrichment when image or SAM hyperparameters change
+  // Check Precomputed Results or Run Analysis on Image Change
   useEffect(() => {
     if (!currentImage) return;
     let isCancelled = false;
 
-    const executeAnalysis = async () => {
+    const executeAnalysisOrLoadCache = async () => {
+      // 1. Check if background batch already computed this image with default settings
+      const isDefaultParams =
+        pointsPerSide === 16 &&
+        iouThresh === 0.50 &&
+        stabilityThresh === 0.50 &&
+        minAreaPx === 100;
+
+      if (isDefaultParams) {
+        try {
+          const cached = await getPrecomputedResult(currentImage.name);
+          if (isCancelled) return;
+
+          if (cached && cached.status === "completed" && cached.segments) {
+            setSegments(cached.segments);
+            if (cached.summary) setStats(cached.summary);
+            if (cached.health_summary) setHealthSummary(cached.health_summary);
+            if (cached.scene_eval) setSceneEval(cached.scene_eval);
+            if (cached.overlay_base64) setOverlaySrc(cached.overlay_base64);
+            setIsLoading(false);
+            setAnalysisStage("idle");
+            return;
+          } else if (cached && (cached.status === "processing" || cached.status === "pending")) {
+            // Bump image to front of background processing queue
+            prioritizeBatchImage(currentImage.name).catch(() => {});
+            setIsLoading(true);
+            setAnalysisStage((cached.stage as AnalysisStage) || "segmenting");
+            return;
+          }
+        } catch {
+          // fallback to manual run
+        }
+      }
+
+      // 2. Direct run if not in batch or if user customized parameters
       setIsLoading(true);
       setAnalysisError(null);
       setAnalysisStage("segmenting");
@@ -173,7 +254,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
       }
     };
 
-    executeAnalysis();
+    executeAnalysisOrLoadCache();
 
     return () => {
       isCancelled = true;
@@ -185,6 +266,30 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
     stabilityThresh,
     minAreaPx,
   ]);
+
+  // Auto-update active image as soon as background processing completes it
+  useEffect(() => {
+    if (!currentImage) return;
+    const item = batchStatus?.items?.[currentImage.name];
+    if (item && item.status === "completed" && (isLoading || segments.length === 0 || !overlaySrc)) {
+      getPrecomputedResult(currentImage.name)
+        .then((data) => {
+          if (data && data.status === "completed" && data.segments) {
+            setSegments(data.segments);
+            if (data.summary) setStats(data.summary);
+            if (data.health_summary) setHealthSummary(data.health_summary);
+            if (data.scene_eval) setSceneEval(data.scene_eval);
+            if (data.overlay_base64) setOverlaySrc(data.overlay_base64);
+            setIsLoading(false);
+            setAnalysisStage("idle");
+          }
+        })
+        .catch(console.error);
+    } else if (item && item.status === "processing" && !overlaySrc) {
+      setIsLoading(true);
+      setAnalysisStage((item.stage as AnalysisStage) || "segmenting");
+    }
+  }, [batchStatus, currentImage?.name, isLoading, segments.length, overlaySrc]);
 
   // Fast re-render overlay when display controls or selection change
   useEffect(() => {
@@ -248,6 +353,118 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
       {/* Top Bar: Back, Andromeida Branding, Hardware Device */}
       <TopBar onBack={onBackToUpload} deviceInfo={deviceInfo} />
 
+      {/* Batch Processing Header Bar */}
+      {batchStatus && (batchStatus.is_running || batchStatus.is_paused || batchStatus.completed > 0) && (
+        <div className="flex flex-wrap items-center justify-between px-6 py-2 bg-slate-900 text-white border-b border-slate-800 text-xs gap-3 z-30 shadow-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {batchStatus.is_running && !batchStatus.is_paused && (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-400" />
+              </span>
+            )}
+            {batchStatus.is_paused && <span className="h-2 w-2 rounded-full bg-amber-400" />}
+            {!batchStatus.is_running && !batchStatus.is_paused && (
+              <CheckCircle2 size={13} className="text-emerald-400" />
+            )}
+
+            <span className="font-semibold text-slate-100">
+              {batchStatus.is_running
+                ? (batchStatus.is_paused ? "Batch Paused" : "Autonomous Batch Processing")
+                : "Batch Completed"}
+            </span>
+
+            <span className="font-mono text-[11px] text-teal-300 bg-teal-950/70 border border-teal-800/80 px-2 py-0.5 rounded-md">
+              {batchStatus.completed} / {batchStatus.total} Processed ({batchStatus.percent}%)
+            </span>
+
+            {batchStatus.is_running && !batchStatus.is_paused && batchStatus.current_image && (
+              <span className="text-slate-400 text-[11px] truncate hidden md:inline">
+                • {batchStatus.current_image} ({batchStatus.current_stage})
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {batchStatus.is_running && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (batchStatus.is_paused) {
+                      const res = await resumeBatch();
+                      setBatchStatus(res);
+                    } else {
+                      const res = await pauseBatch();
+                      setBatchStatus(res);
+                    }
+                  }}
+                  className="h-6 px-2 text-[10px] font-semibold gap-1 bg-slate-800 text-slate-200 border-slate-700 hover:bg-slate-700 hover:text-white"
+                >
+                  {batchStatus.is_paused ? <Play size={10} /> : <Pause size={10} />}
+                  <span>{batchStatus.is_paused ? "Resume" : "Pause"}</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (confirm("Cancel remaining queued images in batch?")) {
+                      const res = await cancelBatch();
+                      setBatchStatus(res);
+                    }
+                  }}
+                  className="h-6 px-2 text-[10px] font-semibold gap-1 bg-slate-800 text-red-400 border-red-900/60 hover:bg-red-950 hover:text-red-300"
+                >
+                  <StopCircle size={10} />
+                  <span>Cancel</span>
+                </Button>
+              </>
+            )}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={batchStatus.completed === 0 || isExportingBatch}
+              onClick={async () => {
+                setIsExportingBatch(true);
+                try {
+                  const res = await downloadBatchCocoZip();
+                  if (res.success && res.path) {
+                    setBatchFeedback(`Dataset exported: ${res.path.split(/[/\\]/).pop()}`);
+                    setTimeout(() => setBatchFeedback(null), 5000);
+                  }
+                } catch (e: any) {
+                  alert(`Export error: ${e?.message || e}`);
+                } finally {
+                  setIsExportingBatch(false);
+                }
+              }}
+              className="h-6 px-2.5 text-[10px] font-bold gap-1 text-teal-300 bg-teal-950/80 border-teal-700/80 hover:bg-teal-900 hover:text-white rounded-md"
+              title="Download all images processed until now in structured COCO format (.zip)"
+            >
+              {isExportingBatch ? (
+                <Loader2 size={10} className="animate-spin text-teal-300" />
+              ) : (
+                <FolderArchive size={11} className="text-teal-300" />
+              )}
+              <span>Export Dataset (.zip)</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {batchFeedback && (
+        <div className="px-6 py-1.5 bg-emerald-950 border-b border-emerald-800 text-emerald-300 text-xs font-semibold flex items-center justify-between">
+          <span>{batchFeedback}</span>
+          <button onClick={() => setBatchFeedback(null)} className="text-emerald-400 hover:text-white">✕</button>
+        </div>
+      )}
+
       {analysisError && (
         <div className="flex items-center justify-between px-6 py-2.5 bg-destructive/10 border-b border-destructive/20 text-destructive text-xs font-medium z-40">
           <div className="flex items-center gap-2">
@@ -308,6 +525,14 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
               currentIndex={currentIndex}
               totalImages={images.length}
               currentImageName={currentImage.name}
+              imageNames={images.map((img) => img.name)}
+              itemStatuses={
+                batchStatus?.items
+                  ? (Object.fromEntries(
+                      Object.entries(batchStatus.items).map(([k, v]) => [k, v.status])
+                    ) as any)
+                  : undefined
+              }
               onPrev={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
               onNext={() => setCurrentIndex((prev) => Math.min(prev + 1, images.length - 1))}
               onSelectPage={(idx) => setCurrentIndex(idx)}

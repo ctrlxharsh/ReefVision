@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 class DevicePreferenceRequest(BaseModel):
     preference: str = Field(default="auto", description="Device preference: auto, cuda, cpu")
+    concurrency: Optional[int] = Field(default=1, ge=1, le=4, description="Parallel batch concurrency workers (1-4)")
 
 
 class DeviceInfoResponse(BaseModel):
@@ -89,3 +90,31 @@ class SampleItem(BaseModel):
     filename: str
     path: str
     size_bytes: int
+
+
+class BatchStartRequest(BaseModel):
+    images: List[str] = Field(description="List of registered image names to process in bulk")
+    concurrency: int = Field(default=1, ge=1, le=4, description="Parallel worker count (1: sequential, 2-4: parallel)")
+    points_per_side: int = Field(default=16, ge=8, le=36)
+    iou_thresh: float = Field(default=0.50, ge=0.20, le=0.98)
+    stability_thresh: float = Field(default=0.50, ge=0.20, le=0.99)
+    min_area_px: int = Field(default=100, ge=10, le=50000)
+
+
+class BatchPrioritizeRequest(BaseModel):
+    image_name: str = Field(description="Name of image to move to front of batch queue")
+
+
+class BatchStatusResponse(BaseModel):
+    batch_id: str
+    is_running: bool
+    is_paused: bool
+    concurrency: int
+    total: int
+    completed: int
+    failed: int
+    percent: int
+    current_image: Optional[str]
+    current_stage: str
+    images_order: List[str]
+    items: Dict[str, Any]

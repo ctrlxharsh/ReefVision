@@ -11,6 +11,12 @@ import {
   Zap,
   Trash2,
   X,
+  Play,
+  Pause,
+  StopCircle,
+  FolderArchive,
+  ArrowRight,
+  Loader2,
 } from "lucide-react";
 import JSZip from "jszip";
 import { BrandLogo } from "../components/BrandLogo";
@@ -31,6 +37,7 @@ import {
   SampleItem,
   LoadedImage,
   DownloadProgress,
+  BatchStatusResponse,
 } from "../types";
 import {
   checkHealth,
@@ -43,6 +50,12 @@ import {
   getSampleImageUrl,
   registerImage,
   loadSampleToStore,
+  startBatch,
+  getBatchStatus,
+  pauseBatch,
+  resumeBatch,
+  cancelBatch,
+  downloadBatchCocoZip,
 } from "../services/api";
 
 interface ModelGroupDef {
@@ -93,6 +106,14 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
   const [modelsList, setModelsList] = useState<ModelSpec[]>([]);
   const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
   const [devicePref, setDevicePref] = useState<string>("auto");
+  const [concurrency, setConcurrency] = useState<number>(1);
+
+  // Batch Background Processing State
+  const [batchStatus, setBatchStatus] = useState<BatchStatusResponse | null>(null);
+  const [isStartingBatch, setIsStartingBatch] = useState<boolean>(false);
+  const [isExportingZip, setIsExportingZip] = useState<boolean>(false);
+  const [exportFeedback, setExportFeedback] = useState<string | null>(null);
+  const [activeBatchImages, setActiveBatchImages] = useState<LoadedImage[]>([]);
 
   // Download state
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress>({
@@ -106,7 +127,6 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
 
   // Staged upload images
   const [stagedImages, setStagedImages] = useState<LoadedImage[]>([]);
-  const [isProcessingUpload, setIsProcessingUpload] = useState<boolean>(false);
   const [dragActive, setDragActive] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -114,7 +134,6 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
   const [availableSamples, setAvailableSamples] = useState<SampleItem[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<string>("First 6 Samples");
   const [selectedSpecific, setSelectedSpecific] = useState<string[]>([]);
-  const [isLoadingSamples, setIsLoadingSamples] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Poll backend health and initialize with continuous heartbeat
@@ -129,6 +148,9 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
         setIsBackendConnected(true);
         setIsCheckingBackend(false);
         setDeviceInfo(health.device);
+        if (health.device?.concurrency) {
+          setConcurrency(health.device.concurrency);
+        }
 
         setAvailableSamples((prev) => {
           if (prev.length === 0) {
@@ -149,6 +171,9 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                   setAllDownloaded(modelsRes.all_downloaded);
                   setModelsList(modelsRes.models);
                   setDeviceInfo(modelsRes.device_info);
+                  if (modelsRes.device_info?.concurrency) {
+                    setConcurrency(modelsRes.device_info.concurrency);
+                  }
                 }
               })
               .catch(console.error);
@@ -175,6 +200,33 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
     };
   }, []);
 
+  // Continuous background batch status poller
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    let isSubscribed = true;
+
+    const pollBatch = async () => {
+      try {
+        const res = await getBatchStatus();
+        if (isSubscribed) {
+          setBatchStatus(res);
+        }
+      } catch {
+        // silent if backend offline
+      }
+      if (isSubscribed) {
+        timer = setTimeout(pollBatch, 1000);
+      }
+    };
+
+    pollBatch();
+
+    return () => {
+      isSubscribed = false;
+      clearTimeout(timer);
+    };
+  }, []);
+
   const handleManualRetry = async () => {
     setIsCheckingBackend(true);
     setLoadError(null);
@@ -182,6 +234,9 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
       const health = await checkHealth();
       setIsBackendConnected(true);
       setDeviceInfo(health.device);
+      if (health.device?.concurrency) {
+        setConcurrency(health.device.concurrency);
+      }
 
       const [modelsRes, samplesRes] = await Promise.all([
         getModelsStatus(),
@@ -190,6 +245,9 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
       setAllDownloaded(modelsRes.all_downloaded);
       setModelsList(modelsRes.models);
       setDeviceInfo(modelsRes.device_info);
+      if (modelsRes.device_info?.concurrency) {
+        setConcurrency(modelsRes.device_info.concurrency);
+      }
       setAvailableSamples(samplesRes);
       if (samplesRes.length > 0) {
         setSelectedSpecific(samplesRes.slice(0, 4).map((s) => s.filename));
@@ -206,10 +264,20 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
   const handleDeviceChange = async (val: string) => {
     setDevicePref(val);
     try {
-      const updated = await setDevicePreference(val);
+      const updated = await setDevicePreference(val, concurrency);
       setDeviceInfo(updated);
     } catch (e) {
       console.error("Failed to update device", e);
+    }
+  };
+
+  const handleConcurrencyChange = async (c: number) => {
+    setConcurrency(c);
+    try {
+      const updated = await setDevicePreference(devicePref, c);
+      setDeviceInfo(updated);
+    } catch (e) {
+      console.error("Failed to update concurrency", e);
     }
   };
 
@@ -289,7 +357,6 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
 
   // File Upload Handlers
   const handleFiles = async (fileList: FileList) => {
-    setIsProcessingUpload(true);
     setLoadError(null);
     const newImages: LoadedImage[] = [];
 
@@ -336,7 +403,6 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
     }
 
     setStagedImages((prev) => [...prev, ...newImages]);
-    setIsProcessingUpload(false);
   };
 
   const onDragOver = (e: React.DragEvent) => {
@@ -354,13 +420,12 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
     }
   };
 
-  // Launch Staged Upload Images
-  const handleLaunchUploaded = async () => {
+  // Start Batch for Staged Upload Images
+  const handleStartBatchUpload = async () => {
     if (stagedImages.length === 0) {
       alert("Please upload at least 1 image first.");
       return;
     }
-    // Preflight verify models are downloaded
     const modelsRes = await getModelsStatus().catch(() => null);
     if (!modelsRes || !modelsRes.all_downloaded) {
       setAllDownloaded(false);
@@ -368,27 +433,28 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
       setLoadError("Process blocked: Foundation models are missing or deleted. You must download all models before proceeding.");
       return;
     }
-    setIsProcessingUpload(true);
+    setIsStartingBatch(true);
     setLoadError(null);
     try {
       for (const img of stagedImages) {
         await registerImage(img.name, img.dataUrl);
       }
-      onLaunchStudio(stagedImages);
-    } catch (e) {
-      setLoadError(`Failed to register images with engine: ${e}`);
+      setActiveBatchImages(stagedImages);
+      const res = await startBatch(stagedImages.map((img) => img.name), undefined, concurrency);
+      setBatchStatus(res);
+    } catch (e: any) {
+      setLoadError(`Failed to start batch processing: ${e?.message || e}`);
     } finally {
-      setIsProcessingUpload(false);
+      setIsStartingBatch(false);
     }
   };
 
-  // Launch Sample Library Images
-  const handleLaunchSamples = async () => {
+  // Start Batch for Sample Library Images
+  const handleStartBatchSamples = async () => {
     if (sampleSubset.length === 0) {
       alert("No sample images available to launch. Please select at least 1 file.");
       return;
     }
-    // Preflight verify models are downloaded
     const modelsRes = await getModelsStatus().catch(() => null);
     if (!modelsRes || !modelsRes.all_downloaded) {
       setAllDownloaded(false);
@@ -396,12 +462,10 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
       setLoadError("Process blocked: Foundation models are missing or deleted. You must download all models before proceeding.");
       return;
     }
-    setIsLoadingSamples(true);
+    setIsStartingBatch(true);
     setLoadError(null);
     try {
-      // First verify backend is responsive
       await checkHealth();
-
       const loaded: LoadedImage[] = [];
       for (const s of sampleSubset) {
         await loadSampleToStore(s.filename);
@@ -410,13 +474,245 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
           dataUrl: getSampleImageUrl(s.filename),
         });
       }
-      onLaunchStudio(loaded);
+      setActiveBatchImages(loaded);
+      const res = await startBatch(sampleSubset.map((s) => s.filename), undefined, concurrency);
+      setBatchStatus(res);
     } catch (e: any) {
       setIsBackendConnected(false);
       setLoadError(`Vision engine at http://127.0.0.1:8000 is unreachable: ${e?.message || e}`);
     } finally {
-      setIsLoadingSamples(false);
+      setIsStartingBatch(false);
     }
+  };
+
+  const handlePauseResumeBatch = async () => {
+    try {
+      if (batchStatus?.is_paused) {
+        const res = await resumeBatch();
+        setBatchStatus(res);
+      } else {
+        const res = await pauseBatch();
+        setBatchStatus(res);
+      }
+    } catch (e: any) {
+      alert(`Error toggling pause: ${e?.message || e}`);
+    }
+  };
+
+  const handleCancelBatchRun = async () => {
+    if (!confirm("Are you sure you want to cancel the remaining queued images? Images processed up to now will be preserved.")) {
+      return;
+    }
+    try {
+      const res = await cancelBatch();
+      setBatchStatus(res);
+    } catch (e: any) {
+      alert(`Error cancelling batch: ${e?.message || e}`);
+    }
+  };
+
+  const handleExportBatchZip = async () => {
+    setIsExportingZip(true);
+    try {
+      const res = await downloadBatchCocoZip();
+      if (res.success && res.path) {
+        setExportFeedback(`Dataset exported: ${res.path.split(/[/\\]/).pop()}`);
+        setTimeout(() => setExportFeedback(null), 5000);
+      } else if (res.error) {
+        alert(`Export failed: ${res.error}`);
+      }
+    } catch (e: any) {
+      alert(`Export error: ${e?.message || e}`);
+    } finally {
+      setIsExportingZip(false);
+    }
+  };
+
+  const handleLaunchStudioNow = () => {
+    if (activeBatchImages.length > 0) {
+      onLaunchStudio(activeBatchImages);
+    } else if (activeTab === "upload" && stagedImages.length > 0) {
+      onLaunchStudio(stagedImages);
+    } else {
+      const loaded = sampleSubset.map((s) => ({
+        name: s.filename,
+        dataUrl: getSampleImageUrl(s.filename),
+      }));
+      onLaunchStudio(loaded);
+    }
+  };
+
+  // Reusable batch control & progress panel
+  const renderBatchControlPanel = (itemsCount: number, onStartBatch: () => void, isStarting: boolean) => {
+    const isRunning = batchStatus?.is_running ?? false;
+    const isPaused = batchStatus?.is_paused ?? false;
+    const isComplete = !isRunning && (batchStatus?.completed ?? 0) > 0 && (batchStatus?.completed === batchStatus?.total);
+    const hasProcessed = (batchStatus?.completed ?? 0) > 0;
+
+    if (!isRunning && !isPaused && !isComplete && !hasProcessed) {
+      return (
+        <div className="shrink-0 pt-2.5 mt-auto border-t border-slate-100 bg-white">
+          <Button
+            type="button"
+            className="w-full h-10 text-xs font-bold tracking-wider uppercase text-white rounded-xl shadow-xs hover:shadow-md transition-all gap-2 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 active:scale-[0.99]"
+            onClick={onStartBatch}
+            disabled={isStarting || itemsCount === 0 || !isBackendConnected}
+          >
+            <Rocket size={14} className={isStarting ? "animate-bounce" : ""} />
+            <span>
+              {isStarting
+                ? "Initializing Background Engines..."
+                : !isBackendConnected
+                ? "Waiting for Vision Engine..."
+                : `Start Batch Processing (${itemsCount} Images)`}
+            </span>
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="shrink-0 pt-2.5 mt-auto border-t border-slate-200/90 bg-white">
+        {exportFeedback && (
+          <div className="mb-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between">
+            <span>{exportFeedback}</span>
+            <button onClick={() => setExportFeedback(null)} className="text-emerald-600 hover:text-emerald-900">
+              <X size={12} />
+            </button>
+          </div>
+        )}
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 shadow-xs space-y-2.5">
+          {/* Row 1: Header status and controls */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              {isRunning && !isPaused && (
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-600" />
+                </span>
+              )}
+              {isPaused && <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />}
+              {isComplete && <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />}
+
+              <span className="text-xs font-bold text-slate-800 truncate">
+                {isComplete
+                  ? "Batch Complete"
+                  : isPaused
+                  ? "Batch Paused"
+                  : isRunning
+                  ? "Autonomous Background Processing"
+                  : "Batch Idle"}
+              </span>
+
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600">
+                {batchStatus?.completed || 0} / {batchStatus?.total || itemsCount} Done
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              {isRunning && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePauseResumeBatch}
+                    className="h-7 px-2 text-[10px] font-semibold gap-1 text-slate-700 hover:bg-slate-100"
+                    title={isPaused ? "Resume processing" : "Pause processing"}
+                  >
+                    {isPaused ? <Play size={11} /> : <Pause size={11} />}
+                    <span>{isPaused ? "Resume" : "Pause"}</span>
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelBatchRun}
+                    className="h-7 px-2 text-[10px] font-semibold gap-1 text-red-600 hover:bg-red-50 hover:border-red-200"
+                    title="Cancel remaining queued images"
+                  >
+                    <StopCircle size={11} />
+                    <span>Cancel</span>
+                  </Button>
+                </>
+              )}
+
+              {!isRunning && hasProcessed && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onStartBatch}
+                  className="h-7 px-2 text-[10px] font-semibold gap-1 text-teal-700 hover:bg-teal-50"
+                  title="Re-run batch on selected images"
+                >
+                  <Rocket size={11} />
+                  <span>Restart</span>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Row 2: Progress bar & Live stage readout */}
+          <div className="space-y-1">
+            <div className="flex justify-between items-center text-[11px] font-medium text-slate-600">
+              <span className="truncate max-w-[280px]">
+                {isRunning && !isPaused && batchStatus?.current_image
+                  ? `Analyzing ${batchStatus.current_image} • ${batchStatus.current_stage || "Processing"}`
+                  : isPaused
+                  ? "Paused (Current progress preserved)"
+                  : isComplete
+                  ? "All images segmented and taxonomically enriched"
+                  : "Ready for analysis"}
+              </span>
+              <span className="font-mono text-teal-700 font-bold shrink-0">
+                {batchStatus?.percent || 0}%
+              </span>
+            </div>
+            <Progress
+              value={batchStatus?.percent || 0}
+              className="h-2 bg-slate-200/80 rounded-full"
+              indicatorColor="bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85]"
+            />
+          </div>
+
+          {/* Row 3: Action Buttons (View Progress & Download COCO Dataset) */}
+          <div className="flex items-center gap-2 pt-1">
+            <Button
+              type="button"
+              className="flex-1 h-9 text-xs font-bold uppercase tracking-wider text-white rounded-lg shadow-xs hover:shadow-md transition-all gap-1.5 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95"
+              onClick={handleLaunchStudioNow}
+              disabled={!isBackendConnected || (!hasProcessed && !isRunning)}
+            >
+              <span>
+                {hasProcessed
+                  ? `Open Studio (${batchStatus?.completed} Ready)`
+                  : "View Progress in Studio"}
+              </span>
+              <ArrowRight size={13} />
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 px-3 text-xs font-bold gap-1.5 border-teal-300 text-teal-800 bg-teal-50/60 hover:bg-teal-100 hover:border-teal-400 rounded-lg transition-colors"
+              onClick={handleExportBatchZip}
+              disabled={!hasProcessed || isExportingZip}
+              title="Download structured COCO dataset (.zip) containing images, COCO JSON annotations, and summary.csv"
+            >
+              {isExportingZip ? (
+                <Loader2 size={13} className="animate-spin text-teal-700" />
+              ) : (
+                <FolderArchive size={14} className="text-teal-700" />
+              )}
+              <span>COCO Dataset (.zip)</span>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -599,7 +895,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
               </div>
             </div>
 
-            <div className="mb-1.5">
+            <div className="mb-2">
               <label className="block text-[11px] font-medium text-slate-500 mb-1">
                 Device Preference
               </label>
@@ -629,6 +925,35 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                   },
                 ]}
                 placeholder="Select device"
+              />
+            </div>
+
+            <div className="mb-2">
+              <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                Batch Concurrency
+              </label>
+              <UISelect
+                value={String(concurrency)}
+                onChange={(val) => handleConcurrencyChange(Number(val))}
+                options={[
+                  {
+                    value: "1",
+                    label: "1 Worker (Sequential - Safe)",
+                  },
+                  {
+                    value: "2",
+                    label: "2 Workers (Dual Parallel)",
+                  },
+                  {
+                    value: "3",
+                    label: "3 Workers (Tri Parallel)",
+                  },
+                  {
+                    value: "4",
+                    label: "4 Workers (Quad Parallel - Fast)",
+                  },
+                ]}
+                placeholder="Select concurrency"
               />
             </div>
 
@@ -900,23 +1225,9 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                     )}
                   </div>
 
-                  {stagedImages.length > 0 && (
-                    <div className="shrink-0 pt-2.5 mt-auto border-t border-slate-100 bg-white">
-                      <Button
-                        type="button"
-                        className="w-full h-10 text-xs font-bold tracking-wider uppercase text-white rounded-xl shadow-xs hover:shadow-md transition-all gap-2 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 active:scale-[0.99]"
-                        onClick={handleLaunchUploaded}
-                        disabled={isProcessingUpload || !isBackendConnected}
-                      >
-                        <Rocket size={14} className={isProcessingUpload ? "animate-bounce" : ""} />
-                        <span>
-                          {isProcessingUpload
-                            ? "Preparing Vision Engines..."
-                            : `Launch Reef Vision Studio (${stagedImages.length} Images)`}
-                        </span>
-                      </Button>
-                    </div>
-                  )}
+                  {stagedImages.length > 0 &&
+                    renderBatchControlPanel(stagedImages.length, handleStartBatchUpload, isStartingBatch)
+                  }
                 </div>
               )}
 
@@ -1033,23 +1344,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                   </div>
 
                   {/* Fixed Bottom Launch Bar - Go Button ALWAYS visible */}
-                  <div className="shrink-0 pt-2.5 mt-auto border-t border-slate-100 bg-white">
-                    <Button
-                      type="button"
-                      className="w-full h-10 text-xs font-bold tracking-wider uppercase text-white rounded-xl shadow-xs hover:shadow-md transition-all gap-2 bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85] hover:opacity-95 active:scale-[0.99]"
-                      onClick={handleLaunchSamples}
-                      disabled={isLoadingSamples || sampleSubset.length === 0 || !isBackendConnected}
-                    >
-                      <Rocket size={14} className={isLoadingSamples ? "animate-bounce" : ""} />
-                      <span>
-                        {isLoadingSamples
-                          ? "Loading Sample Images..."
-                          : !isBackendConnected
-                          ? "Waiting for Vision Engine..."
-                          : `Launch Reef Vision Studio (${sampleSubset.length} Samples)`}
-                      </span>
-                    </Button>
-                  </div>
+                  {renderBatchControlPanel(sampleSubset.length, handleStartBatchSamples, isStartingBatch)}
                 </div>
               )}
             </div>

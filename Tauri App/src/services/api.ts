@@ -5,6 +5,7 @@ import {
   DownloadProgress,
   SampleItem,
   AnalysisData,
+  BatchStatusResponse,
 } from "../types";
 
 const API_BASE = "http://127.0.0.1:8000/api";
@@ -74,11 +75,14 @@ export async function getDownloadProgress(): Promise<DownloadProgress> {
   return res.json();
 }
 
-export async function setDevicePreference(preference: string): Promise<DeviceInfo> {
+export async function setDevicePreference(
+  preference: string,
+  concurrency?: number
+): Promise<DeviceInfo> {
   const res = await fetch(`${API_BASE}/device/select`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ preference }),
+    body: JSON.stringify({ preference, concurrency }),
   });
   if (!res.ok) throw new Error("Failed to set device preference");
   return res.json();
@@ -216,4 +220,124 @@ export async function exportCsvData(imageName: string, minAreaPx: number): Promi
   });
   if (!res.ok) throw new Error("CSV export failed");
   return res.text();
+}
+
+// -------------------------------------------------------------
+// Autonomous Background Batch Processing & Dataset API methods
+// -------------------------------------------------------------
+
+export async function startBatch(
+  images: string[],
+  params?: {
+    points_per_side?: number;
+    iou_thresh?: number;
+    stability_thresh?: number;
+    min_area_px?: number;
+  },
+  concurrency: number = 1
+): Promise<BatchStatusResponse> {
+  const res = await fetch(`${API_BASE}/batch/start`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      images,
+      concurrency,
+      points_per_side: params?.points_per_side ?? 16,
+      iou_thresh: params?.iou_thresh ?? 0.50,
+      stability_thresh: params?.stability_thresh ?? 0.50,
+      min_area_px: params?.min_area_px ?? 100,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to start batch processing");
+  }
+  return res.json();
+}
+
+export async function getBatchStatus(): Promise<BatchStatusResponse> {
+  const res = await fetch(`${API_BASE}/batch/status`);
+  if (!res.ok) throw new Error("Failed to get batch status");
+  return res.json();
+}
+
+export async function pauseBatch(): Promise<BatchStatusResponse> {
+  const res = await fetch(`${API_BASE}/batch/pause`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to pause batch");
+  return res.json();
+}
+
+export async function resumeBatch(): Promise<BatchStatusResponse> {
+  const res = await fetch(`${API_BASE}/batch/resume`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to resume batch");
+  return res.json();
+}
+
+export async function cancelBatch(): Promise<BatchStatusResponse> {
+  const res = await fetch(`${API_BASE}/batch/cancel`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to cancel batch");
+  return res.json();
+}
+
+export async function prioritizeBatchImage(imageName: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/batch/prioritize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image_name: imageName }),
+  });
+  if (!res.ok) throw new Error("Failed to prioritize image");
+  return res.json();
+}
+
+export async function getPrecomputedResult(imageName: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/analysis/result/${encodeURIComponent(imageName)}`);
+  if (!res.ok) throw new Error("Failed to fetch image analysis result");
+  return res.json();
+}
+
+export async function downloadBatchCocoZip(): Promise<{ success: boolean; path?: string; error?: string }> {
+  const url = `${API_BASE}/batch/export/coco-zip`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to export COCO dataset zip");
+  }
+  const blob = await res.blob();
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  const defaultName = `reefvision_coco_dataset_${timestamp}.zip`;
+
+  if (typeof window !== "undefined" && ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)) {
+    try {
+      const { invoke } = await import("@tauri-apps/api/core");
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+      const dataUrl = await base64Promise;
+      const saveRes = await invoke<any>("save_file_dialog", {
+        defaultName,
+        filterName: "ZIP Archive",
+        extensions: ["zip"],
+        content: dataUrl,
+        isBase64: true,
+      });
+      return { success: saveRes.success, path: saveRes.path, error: saveRes.error };
+    } catch (e) {
+      console.warn("Tauri native save fallback to browser:", e);
+    }
+  }
+
+  // Browser download fallback
+  const a = document.createElement("a");
+  const blobUrl = URL.createObjectURL(blob);
+  a.href = blobUrl;
+  a.download = defaultName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  }, 300);
+  return { success: true, path: defaultName };
 }
