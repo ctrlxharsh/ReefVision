@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { ChevronLeft, ChevronRight, FileImage } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -17,7 +17,7 @@ interface PaginationBarProps {
  * Truncates filename in the middle with ellipsis (e.g. imgdsas....jpg)
  * preserving the file extension and prefix when it exceeds maxLen.
  */
-export function truncateMiddle(filename: string, maxLen: number = 48): string {
+export function truncateMiddle(filename: string, maxLen: number = 32): string {
   if (!filename || filename.length <= maxLen) return filename;
 
   const extIdx = filename.lastIndexOf(".");
@@ -45,32 +45,44 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
   onNext,
   onSelectPage,
 }) => {
-  // Earlier pages before currentIndex: show all if under threshold, only collapse if very long
-  const getLeftPages = (): (number | "ellipsis")[] => {
-    if (currentIndex <= 0 || totalImages <= 1) return [];
-    if (totalImages <= 12 || currentIndex <= 5) {
-      return Array.from({ length: currentIndex }, (_, i) => i);
+  // Sliding window pagination:
+  // If totalImages <= 7: [0, 1, 2, ..., totalImages - 1]
+  // If totalImages > 7:
+  //   Near start (currentIndex <= 3): [0, 1, 2, 3, 4, 'ellipsis-right', totalImages - 1]
+  //   Near end (currentIndex >= totalImages - 4): [0, 'ellipsis-left', total - 5, total - 4, total - 3, total - 2, total - 1]
+  //   Middle: [0, 'ellipsis-left', currentIndex - 1, currentIndex, currentIndex + 1, 'ellipsis-right', totalImages - 1]
+  const visiblePages = useMemo<(number | "ellipsis-left" | "ellipsis-right")[]>(() => {
+    if (totalImages <= 1) return [0];
+    if (totalImages <= 7) {
+      return Array.from({ length: totalImages }, (_, i) => i);
     }
-    return [0, "ellipsis", currentIndex - 2, currentIndex - 1];
-  };
 
-  // Later pages after currentIndex: show all if under threshold, only collapse if very long
-  const getRightPages = (): (number | "ellipsis")[] => {
-    if (currentIndex >= totalImages - 1 || totalImages <= 1) return [];
-    const remaining = totalImages - 1 - currentIndex;
-    if (totalImages <= 12 || remaining <= 5) {
-      return Array.from({ length: remaining }, (_, i) => currentIndex + 1 + i);
+    if (currentIndex <= 3) {
+      return [0, 1, 2, 3, 4, "ellipsis-right", totalImages - 1];
     }
+
+    if (currentIndex >= totalImages - 4) {
+      return [
+        0,
+        "ellipsis-left",
+        totalImages - 5,
+        totalImages - 4,
+        totalImages - 3,
+        totalImages - 2,
+        totalImages - 1,
+      ];
+    }
+
     return [
+      0,
+      "ellipsis-left",
+      currentIndex - 1,
+      currentIndex,
       currentIndex + 1,
-      currentIndex + 2,
-      "ellipsis",
+      "ellipsis-right",
       totalImages - 1,
     ];
-  };
-
-  const leftPages = getLeftPages();
-  const rightPages = getRightPages();
+  }, [currentIndex, totalImages]);
 
   const renderPageButton = (p: number) => {
     const imgName = imageNames[p];
@@ -88,7 +100,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
             ? `${imgName} (${status || "ready"})`
             : `Image ${p + 1}`
         }
-        className={`relative h-8 min-w-8 px-1.5 font-mono text-xs font-semibold rounded-md transition-all ${
+        className={`relative h-8 min-w-8 px-2 font-mono text-xs font-semibold rounded-md transition-all ${
           isCurrent
             ? "bg-primary/10 text-primary border border-primary/30 shadow-2xs font-bold"
             : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -97,7 +109,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
         <span>{p + 1}</span>
         {status === "completed" && (
           <span
-            className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-emerald-500 border border-background"
+            className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-emerald-500 border border-background shadow-2xs"
             title="Processing completed"
           />
         )}
@@ -115,7 +127,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
         )}
         {status === "error" && (
           <span
-            className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 border border-background"
+            className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-red-500 border border-background shadow-2xs"
             title="Inference error"
           />
         )}
@@ -125,60 +137,46 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
 
   return (
     <nav
-      className="relative flex items-center justify-between w-full min-h-[48px] px-4 py-2 rounded-xl border border-border/80 bg-card shadow-xs select-none"
+      className="flex items-center justify-between w-full min-h-[48px] px-4 py-2 rounded-xl border border-border/80 bg-card shadow-xs select-none gap-4"
       aria-label="Gallery Navigation"
     >
-      {/* Left Section: Previous button and earlier pages */}
-      <div className="flex items-center gap-1.5 z-10 shrink-0">
+      {/* Left: Image file badge with icon, truncated name, and index (never overlaps with buttons) */}
+      <div className="flex items-center min-w-0">
+        <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-lg bg-muted/60 border border-border/60 shadow-2xs min-w-0">
+          <FileImage className="size-3.5 text-primary shrink-0" />
+          <span
+            className="font-mono text-xs font-semibold text-foreground truncate max-w-[180px] sm:max-w-[280px] md:max-w-[340px]"
+            title={currentImageName}
+          >
+            {truncateMiddle(currentImageName, 32)}
+          </span>
+          <span className="text-muted-foreground/40 shrink-0">•</span>
+          <span className="text-xs text-muted-foreground font-medium shrink-0 whitespace-nowrap">
+            <strong className="text-foreground font-bold">
+              {currentIndex + 1}
+            </strong>{" "}
+            of {totalImages}
+          </span>
+        </div>
+      </div>
+
+      {/* Right: Consolidated Pagination Controls */}
+      <div className="flex items-center gap-1.5 shrink-0">
         <Button
           variant="outline"
           size="sm"
           onClick={onPrev}
           disabled={currentIndex === 0}
-          className="h-8 gap-1.5 px-3 text-xs font-medium"
+          className="h-8 gap-1.5 px-2.5 sm:px-3 text-xs font-medium"
         >
           <ChevronLeft className="size-3.5" />
-          <span>Previous</span>
+          <span className="hidden sm:inline">Previous</span>
         </Button>
 
-        {leftPages.map((p, idx) =>
-          p === "ellipsis" ? (
+        {visiblePages.map((p, idx) =>
+          typeof p === "string" ? (
             <span
-              key={`left-el-${idx}`}
-              className="px-1 text-xs text-muted-foreground select-none font-mono"
-            >
-              •••
-            </span>
-          ) : (
-            renderPageButton(p)
-          )
-        )}
-      </div>
-
-      {/* Center Section: strictly centered in the toolbar with generous width */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 px-4 py-1.5 rounded-lg bg-muted/60 border border-border/60 z-10 max-w-[65%] pointer-events-auto shadow-xs">
-        <FileImage className="size-3.5 text-primary shrink-0" />
-        <span
-          className="font-mono text-xs font-medium text-foreground truncate max-w-[360px]"
-          title={currentImageName}
-        >
-          {truncateMiddle(currentImageName, 48)}
-        </span>
-        <span className="text-muted-foreground/40">•</span>
-        <span className="text-xs text-muted-foreground font-medium shrink-0">
-          <strong className="text-foreground font-semibold">
-            {currentIndex + 1}
-          </strong>{" "}
-          of {totalImages}
-        </span>
-      </div>
-
-      {/* Right Section: later pages and Next button */}
-      <div className="flex items-center gap-1.5 z-10 shrink-0">
-        {rightPages.map((p, idx) =>
-          p === "ellipsis" ? (
-            <span
-              key={`right-el-${idx}`}
+              key={`el-${idx}`}
               className="px-1 text-xs text-muted-foreground select-none font-mono"
             >
               •••
@@ -193,9 +191,9 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
           size="sm"
           onClick={onNext}
           disabled={currentIndex >= totalImages - 1}
-          className="h-8 gap-1.5 px-3 text-xs font-medium"
+          className="h-8 gap-1.5 px-2.5 sm:px-3 text-xs font-medium"
         >
-          <span>Next</span>
+          <span className="hidden sm:inline">Next</span>
           <ChevronRight className="size-3.5" />
         </Button>
       </div>

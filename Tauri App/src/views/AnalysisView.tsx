@@ -7,6 +7,7 @@ import {
   FolderArchive,
   Loader2,
   CheckCircle2,
+  Cpu,
 } from "lucide-react";
 import { Sidebar } from "../components/Sidebar";
 import { TopBar } from "../components/TopBar";
@@ -96,6 +97,7 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
   // Background Batch Tracking & Dataset Export
   const [batchStatus, setBatchStatus] = useState<BatchStatusResponse | null>(null);
   const [isExportingBatch, setIsExportingBatch] = useState<boolean>(false);
+  const [isCancellingBatch, setIsCancellingBatch] = useState<boolean>(false);
   const [batchFeedback, setBatchFeedback] = useState<string | null>(null);
 
   const currentImage = images[currentIndex] || images[0];
@@ -378,20 +380,34 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
               {batchStatus.completed} / {batchStatus.total} Processed ({batchStatus.percent}%)
             </span>
 
-            {batchStatus.is_running && !batchStatus.is_paused && batchStatus.current_image && (
+            {batchStatus.current_stage?.includes("Loading") && (
+              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-700 animate-pulse">
+                <Cpu size={10} className="text-amber-400" />
+                <span>Loading Model into RAM</span>
+              </span>
+            )}
+
+            {batchStatus.is_running && !batchStatus.is_paused && (
               <span className="text-slate-400 text-[11px] truncate hidden md:inline">
-                • {batchStatus.current_image} ({batchStatus.current_stage})
+                • {batchStatus.current_stage || (batchStatus.current_image ? `Analyzing ${batchStatus.current_image}` : "Processing")}
+              </span>
+            )}
+
+            {(batchStatus.current_stage?.includes("Cancelled") || batchStatus.current_stage === "cancelled") && (
+              <span className="text-red-400 text-[11px] truncate hidden md:inline">
+                • Cancelled (Models unloaded from RAM)
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {batchStatus.is_running && (
+            {(batchStatus.is_running || batchStatus.is_paused) && (
               <>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
+                  disabled={isCancellingBatch}
                   onClick={async () => {
                     if (batchStatus.is_paused) {
                       const res = await resumeBatch();
@@ -411,16 +427,29 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                   type="button"
                   variant="outline"
                   size="sm"
+                  disabled={isCancellingBatch}
                   onClick={async () => {
-                    if (confirm("Cancel remaining queued images in batch?")) {
+                    setIsCancellingBatch(true);
+                    try {
                       const res = await cancelBatch();
                       setBatchStatus(res);
+                      setBatchFeedback("Batch cancelled safely. Models unloaded from RAM.");
+                      setTimeout(() => setBatchFeedback(null), 5000);
+                    } catch (e: any) {
+                      alert(`Error cancelling batch: ${e?.message || e}`);
+                    } finally {
+                      setIsCancellingBatch(false);
                     }
                   }}
                   className="h-6 px-2 text-[10px] font-semibold gap-1 bg-slate-800 text-red-400 border-red-900/60 hover:bg-red-950 hover:text-red-300"
+                  title="Cancel processing and unload models from RAM"
                 >
-                  <StopCircle size={10} />
-                  <span>Cancel</span>
+                  {isCancellingBatch ? (
+                    <Loader2 size={10} className="animate-spin text-red-400" />
+                  ) : (
+                    <StopCircle size={10} />
+                  )}
+                  <span>{isCancellingBatch ? "Unloading..." : "Cancel"}</span>
                 </Button>
               </>
             )}

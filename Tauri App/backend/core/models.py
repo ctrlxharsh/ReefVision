@@ -132,6 +132,26 @@ def reset_cached_sessions():
     _BLEACHING_CACHE_KEY = None
 
 
+def unload_all_models_from_ram() -> Dict[str, Any]:
+    """
+    Safely closes and unloads all active ONNX Runtime sessions,
+    releases text embeddings, and triggers garbage collection to free RAM.
+    """
+    reset_cached_sessions()
+    import gc
+    gc.collect()
+    return {"unloaded": True, "message": "All model sessions safely unloaded from RAM"}
+
+
+def are_models_loaded_in_ram() -> Dict[str, bool]:
+    """Returns whether each foundation model is currently loaded in RAM."""
+    return {
+        "sam_loaded": _SAM_BUNDLE is not None,
+        "bioclip_loaded": _BIOCLIP_BUNDLE is not None,
+        "bleaching_loaded": _BLEACHING_SESSION is not None,
+    }
+
+
 def find_or_download_onnx_model(
     filename: str,
     cache_dir: Optional[str] = None,

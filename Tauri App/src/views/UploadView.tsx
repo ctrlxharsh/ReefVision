@@ -114,6 +114,7 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
   const [isExportingZip, setIsExportingZip] = useState<boolean>(false);
   const [exportFeedback, setExportFeedback] = useState<string | null>(null);
   const [activeBatchImages, setActiveBatchImages] = useState<LoadedImage[]>([]);
+  const [isCancellingBatch, setIsCancellingBatch] = useState<boolean>(false);
 
   // Download state
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress>({
@@ -500,14 +501,16 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
   };
 
   const handleCancelBatchRun = async () => {
-    if (!confirm("Are you sure you want to cancel the remaining queued images? Images processed up to now will be preserved.")) {
-      return;
-    }
+    setIsCancellingBatch(true);
     try {
       const res = await cancelBatch();
       setBatchStatus(res);
+      setExportFeedback("Processing cancelled safely. Models unloaded from RAM.");
+      setTimeout(() => setExportFeedback(null), 5000);
     } catch (e: any) {
       alert(`Error cancelling batch: ${e?.message || e}`);
+    } finally {
+      setIsCancellingBatch(false);
     }
   };
 
@@ -611,13 +614,14 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">
-              {isRunning && (
+              {(isRunning || isPaused) && (
                 <>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={handlePauseResumeBatch}
+                    disabled={isCancellingBatch}
                     className="h-7 px-2 text-[10px] font-semibold gap-1 text-slate-700 hover:bg-slate-100"
                     title={isPaused ? "Resume processing" : "Pause processing"}
                   >
@@ -630,16 +634,21 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
                     variant="outline"
                     size="sm"
                     onClick={handleCancelBatchRun}
-                    className="h-7 px-2 text-[10px] font-semibold gap-1 text-red-600 hover:bg-red-50 hover:border-red-200"
-                    title="Cancel remaining queued images"
+                    disabled={isCancellingBatch}
+                    className="h-7 px-2 text-[10px] font-semibold gap-1 text-red-600 hover:bg-red-50 hover:border-red-200 border-red-200"
+                    title="Cancel processing and unload models from RAM"
                   >
-                    <StopCircle size={11} />
-                    <span>Cancel</span>
+                    {isCancellingBatch ? (
+                      <Loader2 size={11} className="animate-spin text-red-600" />
+                    ) : (
+                      <StopCircle size={11} />
+                    )}
+                    <span>{isCancellingBatch ? "Unloading..." : "Cancel"}</span>
                   </Button>
                 </>
               )}
 
-              {!isRunning && hasProcessed && (
+              {!isRunning && !isPaused && hasProcessed && (
                 <Button
                   type="button"
                   variant="outline"
@@ -655,18 +664,32 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
             </div>
           </div>
 
-          {/* Row 2: Progress bar & Live stage readout */}
+          {/* Row 2: Progress bar & Live stage readout with RAM model loading indicator */}
           <div className="space-y-1">
             <div className="flex justify-between items-center text-[11px] font-medium text-slate-600">
-              <span className="truncate max-w-[280px]">
-                {isRunning && !isPaused && batchStatus?.current_image
-                  ? `Analyzing ${batchStatus.current_image} • ${batchStatus.current_stage || "Processing"}`
-                  : isPaused
-                  ? "Paused (Current progress preserved)"
-                  : isComplete
-                  ? "All images segmented and taxonomically enriched"
-                  : "Ready for analysis"}
-              </span>
+              <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                {batchStatus?.current_stage?.includes("Loading") && (
+                  <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 shrink-0 animate-pulse">
+                    <Cpu size={10} className="text-amber-700" />
+                    <span>Loading Model into RAM</span>
+                  </span>
+                )}
+                <span className="truncate max-w-[340px]">
+                  {isRunning && !isPaused
+                    ? batchStatus?.current_stage?.includes("Loading")
+                      ? batchStatus.current_stage
+                      : batchStatus?.current_image
+                      ? `Analyzing ${batchStatus.current_image} • ${batchStatus.current_stage || "Processing"}`
+                      : batchStatus?.current_stage || "Processing..."
+                    : isPaused
+                    ? "Paused (Current progress preserved)"
+                    : batchStatus?.current_stage?.includes("Cancelled") || batchStatus?.current_stage === "cancelled"
+                    ? "Cancelled • Models unloaded from RAM"
+                    : isComplete
+                    ? "All images segmented and taxonomically enriched"
+                    : "Ready for analysis"}
+                </span>
+              </div>
               <span className="font-mono text-teal-700 font-bold shrink-0">
                 {batchStatus?.percent || 0}%
               </span>
@@ -674,7 +697,11 @@ export const UploadView: React.FC<UploadViewProps> = ({ onLaunchStudio }) => {
             <Progress
               value={batchStatus?.percent || 0}
               className="h-2 bg-slate-200/80 rounded-full"
-              indicatorColor="bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85]"
+              indicatorColor={
+                batchStatus?.current_stage?.includes("Loading")
+                  ? "bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 animate-pulse"
+                  : "bg-gradient-to-r from-[#0f1e4a] via-[#163e80] to-[#0d7c85]"
+              }
             />
           </div>
 

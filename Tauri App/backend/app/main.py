@@ -34,6 +34,8 @@ from core.models import (
     load_coralscop_model,
     load_bioclip_model,
     load_bleaching_model,
+    unload_all_models_from_ram,
+    are_models_loaded_in_ram,
     FOUNDATION_MODEL_SPECS,
 )
 from core.segmentation import run_segmentation
@@ -101,6 +103,8 @@ _BATCH_PROCESSOR = BatchProcessor(
     model_loader_bioclip=load_bioclip_model,
     model_loader_bleaching=load_bleaching_model,
     get_active_device=lambda: _ACTIVE_DEVICE_PREF,
+    model_unloader=unload_all_models_from_ram,
+    models_loaded_checker=are_models_loaded_in_ram,
 )
 
 _DOWNLOAD_PROGRESS: Dict[str, Any] = {
@@ -717,8 +721,15 @@ def resume_batch_processing():
 
 @app.post("/api/batch/cancel")
 def cancel_batch_processing():
-    """Cancels remaining pending images in the active batch."""
+    """Cancels remaining pending images in the active batch and unloads models from RAM."""
     return _BATCH_PROCESSOR.cancel_batch()
+
+
+@app.post("/api/models/unload")
+def unload_models_from_ram_endpoint():
+    """Cancels active batches and unloads all models from RAM to free memory."""
+    _BATCH_PROCESSOR.cancel_batch()
+    return unload_all_models_from_ram()
 
 
 @app.post("/api/batch/prioritize")

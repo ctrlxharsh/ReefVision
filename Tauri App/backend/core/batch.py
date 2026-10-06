@@ -16,6 +16,11 @@ from core.taxonomy import enrich_masks_with_taxonomy_and_bleaching
 from core.visualization import create_segmentation_overlay, generate_distinct_colors
 
 
+class BatchCancelledException(Exception):
+    """Raised when batch processing is cancelled cooperatively."""
+    pass
+
+
 class BatchProcessor:
     def __init__(
         self,
@@ -27,6 +32,8 @@ class BatchProcessor:
         model_loader_bioclip: Callable,
         model_loader_bleaching: Callable,
         get_active_device: Callable[[], str],
+        model_unloader: Optional[Callable[[], Any]] = None,
+        models_loaded_checker: Optional[Callable[[], Dict[str, bool]]] = None,
     ):
         self._image_store = image_store
         self._base_seg_cache = base_seg_cache
@@ -36,6 +43,8 @@ class BatchProcessor:
         self._model_loader_bioclip = model_loader_bioclip
         self._model_loader_bleaching = model_loader_bleaching
         self._get_active_device = get_active_device
+        self._model_unloader = model_unloader
+        self._models_loaded_checker = models_loaded_checker
 
         self._lock = threading.Lock()
         self._batch_id = ""
@@ -61,6 +70,11 @@ class BatchProcessor:
             "stability_thresh": 0.50,
             "min_area_px": 100,
         }
+
+    def _check_cancelled(self):
+        with self._lock:
+            if self._cancel_requested:
+                raise BatchCancelledException("Batch cancelled by user")
 
     def start_batch(
         self,
@@ -138,12 +152,29 @@ class BatchProcessor:
             self._cancel_requested = True
             self._is_running = False
             self._is_paused = False
-            self._current_stage = "cancelled"
+
+            # Immediately mark active and pending items as cancelled
+            if self._current_image and self._current_image in self._items:
+                if self._items[self._current_image]["status"] in ("pending", "processing"):
+                    self._items[self._current_image]["status"] = "cancelled"
+                    self._items[self._current_image]["stage"] = "cancelled"
+            self._current_image = None
+
             for name in self._pending_list:
                 if self._items[name]["status"] == "pending":
                     self._items[name]["status"] = "cancelled"
                     self._items[name]["stage"] = "cancelled"
             self._pending_list.clear()
+
+        # Safely unload models from RAM and trigger garbage collection
+        if self._model_unloader is not None:
+            try:
+                self._model_unloader()
+            except Exception as err:
+                print(f"[BatchProcessor] Error unloading models: {err}")
+
+        with self._lock:
+            self._current_stage = "Cancelled • Models unloaded from RAM"
             return self.get_status_locked()
 
     def prioritize_image(self, image_name: str) -> bool:
@@ -231,13 +262,20 @@ class BatchProcessor:
                 time.sleep(0.05)
                 continue
 
-            # Process the image
+            # Process the image with cooperative cancellation
             try:
                 self._process_single_image(target_image)
                 with self._lock:
-                    self._items[target_image]["status"] = "completed"
-                    self._items[target_image]["stage"] = "ready"
-                    self._completed_count += 1
+                    if not self._cancel_requested:
+                        self._items[target_image]["status"] = "completed"
+                        self._items[target_image]["stage"] = "ready"
+                        self._completed_count += 1
+            except BatchCancelledException:
+                with self._lock:
+                    self._items[target_image]["status"] = "cancelled"
+                    self._items[target_image]["stage"] = "cancelled"
+                    self._current_image = None
+                break
             except Exception as e:
                 with self._lock:
                     self._items[target_image]["status"] = "error"
@@ -254,10 +292,13 @@ class BatchProcessor:
                     )
                     if all_done:
                         self._is_running = False
-                        self._current_stage = "completed"
+                        if not self._cancel_requested:
+                            self._current_stage = "completed"
                         self._current_image = None
 
     def _process_single_image(self, img_name: str):
+        self._check_cancelled()
+
         if img_name not in self._image_store:
             raise ValueError(f"Image '{img_name}' is not registered in session image store")
 
@@ -273,13 +314,26 @@ class BatchProcessor:
 
         base_cache_key = f"{img_name}_{pts}_{iou_t}_{stab_t}"
 
-        # Step 1: SAM ViT-B Dense Segmentation
-        with self._lock:
-            self._items[img_name]["stage"] = "segmenting"
-            self._current_stage = f"Segmenting {img_name}"
-
+        # Step 0: Ensure SAM model is loaded in RAM (show loading stage in UI if not)
         if base_cache_key not in self._base_seg_cache:
+            is_sam_in_ram = (
+                self._models_loaded_checker().get("sam_loaded", False)
+                if self._models_loaded_checker
+                else False
+            )
+            if not is_sam_in_ram:
+                with self._lock:
+                    self._items[img_name]["stage"] = "loading_sam"
+                    self._current_stage = f"Loading SAM ViT-B model into RAM ({img_name})..."
+            self._check_cancelled()
             sam_model = self._model_loader_sam(device=active_device)
+            self._check_cancelled()
+
+            # Step 1: SAM ViT-B Dense Segmentation
+            with self._lock:
+                self._items[img_name]["stage"] = "segmenting"
+                self._current_stage = f"Segmenting {img_name} (SAM ViT-B)"
+
             img_np = np.array(pil_img)
             masks_info, _ = run_segmentation(
                 model=sam_model,
@@ -291,6 +345,7 @@ class BatchProcessor:
             )
             self._base_seg_cache[base_cache_key] = masks_info
 
+        self._check_cancelled()
         all_candidate_masks = self._base_seg_cache[base_cache_key]
 
         # Filter masks by min_area_px
@@ -317,15 +372,28 @@ class BatchProcessor:
             m_copy["instance_color_hex"] = m_copy["color_hex"]
             filtered_masks.append(m_copy)
 
-        # Step 2: BioCLIP Taxonomy & Bleaching Enrichment
-        with self._lock:
-            self._items[img_name]["stage"] = "classifying"
-            self._current_stage = f"Classifying {img_name} (BioCLIP & YOLO11)"
+        self._check_cancelled()
 
+        # Step 2: BioCLIP Taxonomy & Bleaching Enrichment
         enrich_cache_key = f"{base_cache_key}_{min_area}"
         if enrich_cache_key not in self._enrich_cache:
+            is_bioclip_in_ram = (
+                self._models_loaded_checker().get("bioclip_loaded", False)
+                if self._models_loaded_checker
+                else False
+            )
+            if not is_bioclip_in_ram:
+                with self._lock:
+                    self._items[img_name]["stage"] = "loading_bioclip"
+                    self._current_stage = f"Loading BioCLIP & YOLO11 models into RAM ({img_name})..."
+            self._check_cancelled()
             bioclip = self._model_loader_bioclip(device=active_device)
             bleaching = self._model_loader_bleaching(device=active_device)
+            self._check_cancelled()
+
+            with self._lock:
+                self._items[img_name]["stage"] = "classifying"
+                self._current_stage = f"Classifying {img_name} (BioCLIP & YOLO11)"
 
             enriched_masks, full_image_eval, health_summary = enrich_masks_with_taxonomy_and_bleaching(
                 image=pil_img,
@@ -335,6 +403,7 @@ class BatchProcessor:
             )
             self._enrich_cache[enrich_cache_key] = (enriched_masks, full_image_eval, health_summary)
 
+        self._check_cancelled()
         masks_info, full_image_eval, health_summary = self._enrich_cache[enrich_cache_key]
 
         # Recompute summary stats
@@ -381,6 +450,8 @@ class BatchProcessor:
                 "bbox": [int(v) for v in m["bbox"]] if m.get("bbox") else None,
             })
 
+        self._check_cancelled()
+
         # Step 3: Pre-render default overlay PNG base64
         with self._lock:
             self._items[img_name]["stage"] = "rendering"
@@ -406,6 +477,8 @@ class BatchProcessor:
 
         overlay_cache_key = f"{img_name}_default"
         self._overlay_cache[overlay_cache_key] = overlay_b64
+
+        self._check_cancelled()
 
         # Commit results to item dictionary
         with self._lock:

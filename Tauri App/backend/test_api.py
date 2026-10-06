@@ -107,10 +107,15 @@ def test_endpoints():
     resp = client.post("/api/batch/cancel")
     assert resp.status_code == 200
 
+    # Test /api/models/unload endpoint
+    resp = client.post("/api/models/unload")
+    assert resp.status_code == 200
+    assert resp.json().get("unloaded") is True
+
     # Prioritize
     resp = client.post("/api/batch/prioritize", json={"image_name": "sample.png"})
     assert resp.status_code == 200
-    print("  Batch pause, resume, cancel, prioritize endpoints verified.")
+    print("  Batch pause, resume, cancel, unload, prioritize endpoints verified.")
 
     # Export empty -> 400
     resp = client.get("/api/batch/export/coco-zip")

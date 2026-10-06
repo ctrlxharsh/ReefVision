@@ -279,6 +279,12 @@ export async function cancelBatch(): Promise<BatchStatusResponse> {
   return res.json();
 }
 
+export async function unloadModelsFromRam(): Promise<{ unloaded: boolean; message: string }> {
+  const res = await fetch(`${API_BASE}/models/unload`, { method: "POST" });
+  if (!res.ok) throw new Error("Failed to unload models from RAM");
+  return res.json();
+}
+
 export async function prioritizeBatchImage(imageName: string): Promise<any> {
   const res = await fetch(`${API_BASE}/batch/prioritize`, {
     method: "POST",
